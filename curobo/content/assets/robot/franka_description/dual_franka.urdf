@@ -4,7 +4,7 @@
   <joint name="world_to_right_arm" type="fixed">
     <parent link="world_base_link" />
     <child link="base_link" />
-    <origin rpy="0 0 3.14159265359" xyz="0.4 0 0" />
+    <origin rpy="0 0 -1.57079632679" xyz="0 0.4 0" />
   </joint>
   <link name="base_link" />
   <joint name="panda_fixed" type="fixed">
@@ -305,7 +305,7 @@
   <joint name="world_to_left_arm" type="fixed">
     <parent link="world_base_link" />
     <child link="base_link_1" />
-    <origin rpy="0 0 0" xyz="-0.4 0 0" />
+    <origin rpy="0 0 1.57079632679" xyz="0 -0.4 0" />
   </joint>
   <link name="base_link_1" />
   <link name="panda_link0_1">

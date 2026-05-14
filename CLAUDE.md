@@ -179,6 +179,8 @@ Supported obstacle primitives (`curobo/_src/geom/types/`):
 - `Mesh`: `file_path` to `.obj`/`.stl` and `pose`
 - `VoxelGrid`: Dense voxel grid for ESDF perception
 
+**Important bug**: `SceneData.from_scene_cfg` (`curobo/_src/geom/data/data_scene.py`) only loads `cuboid`, `mesh`, and `voxel` into the GPU collision buffer. `Cylinder`, `Sphere`, and `Capsule` obstacles defined in a `SceneCfg` are silently ignored by the collision checker, even though they are valid `SceneCfg` types and render correctly in Viser. To use cylindrical obstacles for collision checking, approximate them with `Cuboid` (bounding box) or convert the entire scene to meshes via `SceneCfg.create_mesh_scene(scene)` before passing to the planner.
+
 ### Programmatic Scene Construction
 
 ```python
