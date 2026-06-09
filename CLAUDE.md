@@ -601,6 +601,34 @@ result = planner.plan_grasp(
 )
 ```
 
+### Dual-Arm Franka with Wrist Camera
+
+A variant `dual_franka_with_camera.yml` / `dual_franka_with_camera.urdf` adds a `wrist_camera` link between the flange (`link8`) and the hand on each arm. The camera mounting plate is 3 mm thick, shifting the hand 3 mm in the local z direction relative to the camera.
+
+**Kinematic chain per arm:**
+```
+link8 ──[rot=-45°]──► wrist_camera ──[z=+0.003m]──► hand
+```
+
+- `wrist_camera_joint` (fixed): connects `link8` → `wrist_camera`, same transform as the original `hand_joint` (`rpy="0 0 -0.785398163397"`, `xyz="0 0 0"`)
+- `hand_joint` (fixed): connects `wrist_camera` → `hand`, with an additional 3 mm z offset (`xyz="0 0 0.003"`)
+
+The camera link loads `meshes/visual/wrist_camera.STL` for visualization but is **not** included in `collision_link_names`.
+
+**Key differences from `dual_franka.yml`:**
+- `urdf_path` points to `dual_franka_with_camera.urdf`
+- `mesh_link_names` includes `panda_right_wrist_camera` and `panda_left_wrist_camera` for rendering
+- Hand collision spheres remain unchanged (they are defined in the `hand` link frame)
+
+Use it the same way as any other robot config:
+
+```python
+config = MotionPlannerCfg.create(
+    robot="dual_franka_with_camera.yml",
+    scene_model="collision_test.yml",
+)
+```
+
 ## Robot Configuration Files
 
 Robot configs are YAML files in `curobo/content/configs/robot/` with this structure:

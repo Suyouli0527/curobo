@@ -24,17 +24,17 @@ cylinder:
 mesh:
   lego_feeder_1:
     file_path: "../assets/lego_feeder.STL"
-    pose: [-0.125, -0.175, 0.2065, 0.0, 0.0, 0.0, 1.0]
+    pose: [-0.19, -0.175, 0.2065, 0.0, 0.0, 0.0, 1.0]
     scale: [0.001, 0.001, 0.001]
   lego_feeder_2:
     file_path: "../assets/lego_feeder.STL"
-    pose: [-0.125, 0.175, 0.2065, 0.0, 0.0, 0.0, 1.0]
+    pose: [-0.19, 0.175, 0.2065, 0.0, 0.0, 0.0, 1.0]
     scale: [0.001, 0.001, 0.001]
   lego_feeder_3:
     file_path: "../assets/lego_feeder.STL"
-    pose: [0.125, -0.175, 0.2065, 1.0, 0.0, 0.0, 0.0]
+    pose: [0.19, -0.175, 0.2065, 1.0, 0.0, 0.0, 0.0]
     scale: [0.001, 0.001, 0.001]
   lego_feeder_4:
     file_path: "../assets/lego_feeder.STL"
-    pose: [0.125, 0.175, 0.2065, 1.0, 0.0, 0.0, 0.0]
+    pose: [0.19, 0.175, 0.2065, 1.0, 0.0, 0.0, 0.0]
     scale: [0.001, 0.001, 0.001]

@@ -53,6 +53,7 @@ class SceneConfig:
     robot_config: str = "dual_franka.yml"
     robot_base_poses: dict = None
     collision_env: Optional[str] = None
+    show_robot_spheres: bool = False
 
     @classmethod
     def load(cls, path: str | Path) -> "SceneConfig":
@@ -88,6 +89,7 @@ class SceneConfig:
             robot_config=data.get("robot_config", "dual_franka.yml"),
             robot_base_poses=data.get("robot_base_poses", None),
             collision_env=collision_env,
+            show_robot_spheres=data.get("show_robot_spheres", False),
         )
 
 

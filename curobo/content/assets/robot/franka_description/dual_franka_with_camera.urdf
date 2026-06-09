@@ -4,7 +4,7 @@
   <joint name="world_to_right_arm" type="fixed">
     <parent link="world_base_link" />
     <child link="panda_right_base_link" />
-    <origin rpy="0.0 0.0 -1.5707771464270195" xyz="0.0 0.444 0.0" />
+    <origin rpy="0 0 -1.57079632679" xyz="0 -0.4 0" />
   </joint>
   <link name="panda_right_base_link" />
   <joint name="panda_right_fixed" type="fixed">
@@ -213,16 +213,29 @@
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
   </joint>
   <link name="panda_right_link8" />
+  <link name="panda_right_wrist_camera">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/visual/wrist_camera.STL" />
+      </geometry>
+    </visual>
+  </link>
   <joint name="panda_right_joint8" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.107" />
     <parent link="panda_right_link7" />
     <child link="panda_right_link8" />
     <axis xyz="0 0 0" />
   </joint>
-  <joint name="panda_right_hand_joint" type="fixed">
-    <parent link="panda_right_link8" />
-    <child link="panda_right_hand" />
+  <joint name="panda_right_wrist_camera_joint" type="fixed">
     <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+    <parent link="panda_right_link8" />
+    <child link="panda_right_wrist_camera" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <joint name="panda_right_hand_joint" type="fixed">
+    <parent link="panda_right_wrist_camera" />
+    <child link="panda_right_hand" />
+    <origin rpy="0 0 0" xyz="0 0 0.003" />
   </joint>
   <link name="panda_right_hand">
     <visual>
@@ -311,7 +324,7 @@
   <joint name="world_to_left_arm" type="fixed">
     <parent link="world_base_link" />
     <child link="panda_left_base_link" />
-    <origin rpy="0.0 0.0 1.5707771464270195" xyz="0.0 -0.444 0.0" />
+    <origin rpy="0 0 1.57079632679" xyz="0 -0.4 0" />
   </joint>
   <link name="panda_left_base_link" />
   <link name="panda_left_link0">
@@ -451,6 +464,13 @@
     </inertial>
   </link>
   <link name="panda_left_link8" />
+  <link name="panda_left_wrist_camera">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/visual/wrist_camera.STL" />
+      </geometry>
+    </visual>
+  </link>
   <link name="panda_left_hand">
     <visual>
       <geometry>
@@ -583,10 +603,16 @@
     <child link="panda_left_link8" />
     <axis xyz="0 0 0" />
   </joint>
-  <joint name="panda_left_hand_joint" type="fixed">
-    <parent link="panda_left_link8" />
-    <child link="panda_left_hand" />
+  <joint name="panda_left_wrist_camera_joint" type="fixed">
     <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+    <parent link="panda_left_link8" />
+    <child link="panda_left_wrist_camera" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <joint name="panda_left_hand_joint" type="fixed">
+    <parent link="panda_left_wrist_camera" />
+    <child link="panda_left_hand" />
+    <origin rpy="0 0 0" xyz="0 0 0.003" />
   </joint>
   <joint name="panda_left_finger_joint1" type="prismatic">
     <parent link="panda_left_hand" />

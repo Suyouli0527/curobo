@@ -192,7 +192,7 @@ def main():
         connect_port=args.port,
         add_robot_to_scene=True,
         add_control_frames=True,
-        visualize_robot_spheres=False,
+        visualize_robot_spheres=scene_cfg.show_robot_spheres,
     )
 
     viser_viz.add_scene(scene, add_control_frames=False)
@@ -219,6 +219,9 @@ def main():
     ellipsoid_scale = server.gui.add_slider(
         "Ellipsoid Scale", min=0.01, max=0.2, step=0.01, initial_value=0.05
     )
+    show_spheres_cb = server.gui.add_checkbox(
+        "Show Collision Spheres", initial_value=scene_cfg.show_robot_spheres
+    )
 
     _ellipsoid_frame_names: list[str] = []
     _ellipsoid_counter = 0
@@ -232,6 +235,25 @@ def main():
                 pass
         _ellipsoid_frame_names.clear()
         _ellipsoid_counter += 1
+
+    @show_spheres_cb.on_update
+    def _on_toggle_spheres(_):
+        viser_viz._visualize_robot_spheres = show_spheres_cb.value
+        if show_spheres_cb.value:
+            try:
+                viser_viz.update_robot_spheres(current_state.squeeze(0))
+            except Exception as e:
+                print(f"[collision spheres] update skipped: {e}")
+        else:
+            if (
+                hasattr(viser_viz, "_batched_spheres_handle")
+                and viser_viz._batched_spheres_handle is not None
+            ):
+                try:
+                    viser_viz._batched_spheres_handle.remove()
+                    viser_viz._batched_spheres_handle = None
+                except Exception:
+                    pass
 
     def update_ellipsoids(joint_state: JointState):
         nonlocal _ellipsoid_counter
@@ -369,6 +391,7 @@ def main():
     print("  - Click 'Move' to plan and execute a trajectory")
     print("  - Toggle 'Maximize Manipulability (IK)' to optimize for dexterity")
     print("  - Toggle 'Show Manipulability Ellipsoids' for real-time visualization")
+    print(f"  - Toggle 'Show Collision Spheres' (default={'on' if scene_cfg.show_robot_spheres else 'off'})")
     print("Press Ctrl+C to exit.\n")
 
     try:
