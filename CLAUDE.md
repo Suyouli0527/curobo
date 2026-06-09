@@ -673,7 +673,21 @@ User configs can be referenced by absolute path or placed in the package's conte
 
 ## Coding Standards and LLM Development Guidelines
 
-The following rules are derived from the project's LLM prompt rule files (`design_principles.mdc`, `package_format_rules.mdc`, `file_naming.mdc`, `documenter.mdc`). They ensure generated code matches the structure, naming, and documentation standards of human-written code.
+The project maintains LLM coding rules in the `.agent/` directory. **When generating or modifying code, always read and follow these rule files first:**
+
+| Rule File | Scope | Purpose |
+|:---|:---|:---|
+| `.agent/design_principles.mdc` | All code | Software design principles (SOLID, DRY, KISS, etc.) |
+| `.agent/package_format_rules.mdc` | Python | Code formatting, type hints, imports, package init rules |
+| `.agent/file_naming.mdc` | All files | Category-first naming convention (`category_specific.py`) |
+| `.agent/documenter.mdc` | Documentation | Docstring style, reST/Sphinx conventions, line width |
+| `.agent/python_rules.mdc` | Python | Environment setup, virtualenv activation, no report policy |
+| `.agent/tests.mdc` | Tests | Unit test guidelines (float32, no float64), coverage commands |
+| `.agent/cpp_rules.mdc` | C++/CUDA | Naming (snake_case, PascalCase), C++17, CUDA kernel rules |
+| `.agent/diataxis.mdc` | Docs | Diátaxis framework (Tutorial/How-To/Reference/Explanation) |
+| `.agent/sphinx_md.mdc` | Docs | MyST parser syntax, Markdown preference, include directives |
+
+The summaries below are derived from these rule files. They ensure generated code matches the structure, naming, and documentation standards of human-written code.
 
 ### Design Principles
 

@@ -154,7 +154,6 @@ docker/pkgs/*
 *.usd
 *.usda
 *.csv
-*.json
 *.SLDPRT
 *.xacro
 *.gazebo
