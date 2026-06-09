@@ -167,5 +167,4 @@ docker/pkgs/*
 !docs/images/*.svg
 
 ./claude
-./agent
 ./github
