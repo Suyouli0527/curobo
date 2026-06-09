@@ -3,7 +3,7 @@
 """Interactive dual-arm motion planning with cuRobo v2 and Viser.
 
 Run:
-    python -m dual_panda_benchmark.main
+    python -m dual_panda_benchmark.interactive_test.py
 
 Then open http://localhost:8080, drag the target frames to set goal poses
 for each arm, and click "Move" to plan and execute a trajectory.

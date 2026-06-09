@@ -16,6 +16,7 @@ import torch
 # CuRobo
 from curobo._src.cost.cost_base import BaseCost
 from curobo._src.cost.cost_cspace_dist import CSpaceDistCost
+from curobo._src.cost.cost_relative_pose import RelativePoseCost
 from curobo._src.cost.cost_scene_collision import SceneCollisionCost
 from curobo._src.cost.cost_self_collision import SelfCollisionCost
 from curobo._src.cost.cost_tool_pose import ToolPoseCost
@@ -177,6 +178,10 @@ class RobotCostManager:
             config.tool_pose_cfg.set_tool_frames(transition_model.robot_model.tool_frames)
             self.register_cost("tool_pose", ToolPoseCost(config.tool_pose_cfg))
 
+        # Relative pose (dual-arm)
+        if config.relative_pose_cfg is not None:
+            self.register_cost("relative_pose", RelativePoseCost(config.relative_pose_cfg))
+
         # Start cspace distance
         if config.start_cspace_dist_cfg is not None:
             config.start_cspace_dist_cfg.initialize_from_transition_model(transition_model)
@@ -236,6 +241,14 @@ class RobotCostManager:
                         goal.idxs_link_pose,
                     )
                     cost_collection.add(cost_value, "tool_pose")
+
+        # Relative pose (dual-arm)
+        if self.has_cost("relative_pose") and state.tool_poses is not None:
+            relative_pose_cost = self.get_cost("relative_pose")
+            if relative_pose_cost.enabled:
+                with self._stream_context("relative_pose"):
+                    cost_value = relative_pose_cost.forward(state.tool_poses)
+                    cost_collection.add(cost_value, "relative_pose")
 
         # Cspace bounds/limits
         if self.has_cost("cspace"):

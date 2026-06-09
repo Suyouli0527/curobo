@@ -695,6 +695,351 @@ def create_goalset_pose_distance_kernel_with_constants(
     return warp_kernel(kernel_name)(_goalset_pose_distance_template)
 
 
+@wp.kernel
+def relative_pose_distance_kernel(
+    primary_position: wp.array(dtype=wp.vec3),
+    primary_quat: wp.array(dtype=wp.vec4),
+    secondary_position: wp.array(dtype=wp.vec3),
+    secondary_quat: wp.array(dtype=wp.vec4),
+    target_rel_position: wp.array(dtype=wp.vec3),
+    target_rel_quat: wp.array(dtype=wp.vec4),
+    position_weight: wp.array(dtype=wp.float32),
+    rotation_weight: wp.array(dtype=wp.float32),
+    position_axes_weight: wp.array(dtype=wp.float32),
+    rotation_axes_weight: wp.array(dtype=wp.float32),
+    convergence_tolerance_pos: wp.array(dtype=wp.float32),
+    convergence_tolerance_rot: wp.array(dtype=wp.float32),
+    out_distance: wp.array(dtype=wp.float32),
+    out_position_distance: wp.array(dtype=wp.float32),
+    out_rotation_distance: wp.array(dtype=wp.float32),
+    out_position_gradient_primary: wp.array(dtype=wp.vec3),
+    out_position_gradient_secondary: wp.array(dtype=wp.vec3),
+    out_rotation_gradient_primary: wp.array(dtype=wp.vec4),
+    out_rotation_gradient_secondary: wp.array(dtype=wp.vec4),
+    batch_size: wp.int32,
+    horizon: wp.int32,
+):
+    """Warp kernel for computing relative pose cost between two end-effectors.
+
+    Computes the relative pose (position + orientation) of secondary w.r.t. primary,
+    compares it against a target relative pose, and returns cost + gradients.
+
+    Position cost: 0.5 * w_p * |rel_pos - target_pos|^2
+    Rotation cost: w_r * |axis_angle(rel_quat * target_quat^-1)|^2  (axis-angle method)
+
+    Gradients are returned w.r.t. primary and secondary poses in world frame.
+    """
+    tid = wp.tid()
+    if tid >= batch_size * horizon:
+        return
+
+    b_idx = tid / horizon
+    h_idx = tid - b_idx * horizon
+
+    # Read primary pose (wxyz -> xyzw)
+    p1 = primary_position[tid]
+    q1_wxyz = primary_quat[tid]
+    q1 = wp.quaternion(q1_wxyz[1], q1_wxyz[2], q1_wxyz[3], q1_wxyz[0])
+
+    # Read secondary pose (wxyz -> xyzw)
+    p2 = secondary_position[tid]
+    q2_wxyz = secondary_quat[tid]
+    q2 = wp.quaternion(q2_wxyz[1], q2_wxyz[2], q2_wxyz[3], q2_wxyz[0])
+
+    # Read target relative pose (wxyz -> xyzw)
+    t_pos = target_rel_position[0]
+    t_quat_wxyz = target_rel_quat[0]
+    t_quat = wp.quaternion(t_quat_wxyz[1], t_quat_wxyz[2], t_quat_wxyz[3], t_quat_wxyz[0])
+
+    # Read scalar params from arrays
+    pos_w = position_weight[0]
+    rot_w = rotation_weight[0]
+    tol_pos = convergence_tolerance_pos[0]
+    tol_rot = convergence_tolerance_rot[0]
+
+    # Read axis weights
+    pw = wp.vec3(position_axes_weight[0], position_axes_weight[1], position_axes_weight[2])
+    rw = wp.vec3(rotation_axes_weight[0], rotation_axes_weight[1], rotation_axes_weight[2])
+
+    # Compute relative pose: secondary w.r.t. primary frame
+    # rel_pos = q1^* ⊙ (p2 - p1)
+    pos_diff = p2 - p1
+    q1_inv = wp.quat_inverse(q1)
+    rel_pos = wp.quat_rotate(q1_inv, pos_diff)
+
+    # rel_quat = q1^* ⊗ q2
+    rel_quat = wp.mul(q1_inv, q2)
+
+    # --- Position error ---
+    pos_delta = rel_pos - t_pos
+    weighted_pos_delta = wp.vec3(
+        pos_delta[0] * pw[0],
+        pos_delta[1] * pw[1],
+        pos_delta[2] * pw[2],
+    )
+    pos_cost = 0.5 * pos_w * wp.dot(weighted_pos_delta, weighted_pos_delta)
+    pos_grad_rel = wp.vec3(
+        pos_w * pw[0] * pw[0] * pos_delta[0],
+        pos_w * pw[1] * pw[1] * pos_delta[1],
+        pos_w * pw[2] * pw[2] * pos_delta[2],
+    )
+
+    tol_pos_sq = tol_pos * tol_pos
+    if pos_cost < tol_pos_sq:
+        pos_cost = 0.0
+        pos_grad_rel = wp.vec3(0.0, 0.0, 0.0)
+
+    # Propagate position gradient from primary frame to world frame
+    # d(cost)/d(p1) = -R(q1) * pos_grad_rel
+    # d(cost)/d(p2) =  R(q1) * pos_grad_rel
+    pos_grad_p1 = wp.quat_rotate(q1, wp.vec3(-pos_grad_rel[0], -pos_grad_rel[1], -pos_grad_rel[2]))
+    pos_grad_p2 = wp.quat_rotate(q1, pos_grad_rel)
+
+    # --- Rotation error (axis-angle method) ---
+    # delta = rel_quat * target_quat^{-1}
+    t_quat_inv = wp.quat_inverse(t_quat)
+    delta_quat = wp.mul(rel_quat, t_quat_inv)
+
+    # Extract axis-angle from delta_quat
+    q_xyz = wp.vec3(delta_quat[0], delta_quat[1], delta_quat[2])
+    q_xyz = wp.cw_mul(rw, q_xyz)
+
+    vec_length = wp.length(q_xyz)
+    angle = 2.0 * wp.atan2(vec_length, wp.abs(delta_quat[3]))
+    if rot_w == 0.0:
+        angle = 0.0
+
+    if vec_length < 1e-15:
+        axis = wp.vec3(0.0, 0.0, 0.0)
+    else:
+        axis = q_xyz / vec_length
+    omega = angle * axis
+
+    rot_cost = rot_w * wp.dot(omega, omega)
+    rot_grad_omega = wp.vec3(0.0, 0.0, 0.0)
+
+    tol_rot_sq = tol_rot * tol_rot
+    if rot_cost < tol_rot_sq:
+        rot_cost = 0.0
+    else:
+        scale_factor = 2.0
+        if delta_quat[3] < 0.0:
+            scale_factor = -2.0
+        rot_grad_omega = scale_factor * rot_w * omega
+
+    # Propagate rotation gradient (angular velocity in world frame)
+    # For relative rotation rel_quat = q1_inv * q2:
+    #   omega_primary   = -rot_grad_omega  (primary rotation opposes rel rotation)
+    #   omega_secondary =  rot_grad_omega  (secondary rotation follows rel rotation)
+    omega_primary = wp.vec3(-rot_grad_omega[0], -rot_grad_omega[1], -rot_grad_omega[2])
+    omega_secondary = rot_grad_omega
+
+    # Convert angular velocity to quaternion rate: q * omega_quat
+    quat_rate_primary = convert_angular_velocity_to_quaternion_rate(omega_primary, q1)
+    quat_rate_secondary = convert_angular_velocity_to_quaternion_rate(omega_secondary, q2)
+
+    # Weight-independent geometric distances for reporting
+    geometric_pos_dist = wp.sqrt(2.0 * pos_cost / pos_w) if pos_w > 0.0 else 0.0
+    geometric_rot_dist = angle  # angle is already weight-independent
+
+    # Write outputs (convert quaternion rate from xyzw to wxyz)
+    out_distance[2 * tid] = pos_cost
+    out_distance[2 * tid + 1] = rot_cost
+    out_position_distance[tid] = geometric_pos_dist
+    out_rotation_distance[tid] = geometric_rot_dist
+    out_position_gradient_primary[tid] = pos_grad_p1
+    out_position_gradient_secondary[tid] = pos_grad_p2
+    out_rotation_gradient_primary[tid] = wp.vec4(
+        quat_rate_primary[3],  # w
+        quat_rate_primary[0],  # x
+        quat_rate_primary[1],  # y
+        quat_rate_primary[2],  # z
+    )
+    out_rotation_gradient_secondary[tid] = wp.vec4(
+        quat_rate_secondary[3],  # w
+        quat_rate_secondary[0],  # x
+        quat_rate_secondary[1],  # y
+        quat_rate_secondary[2],  # z
+    )
+
+
+class RelativePoseDistance(torch.autograd.Function):
+    """torch.autograd.Function wrapper for relative pose distance computation on GPU."""
+
+    @staticmethod
+    def forward(
+        ctx,
+        primary_position: torch.Tensor,
+        primary_quat: torch.Tensor,
+        secondary_position: torch.Tensor,
+        secondary_quat: torch.Tensor,
+        target_rel_position: torch.Tensor,
+        target_rel_quat: torch.Tensor,
+        position_weight: torch.Tensor,
+        rotation_weight: torch.Tensor,
+        position_axes_weight: torch.Tensor,
+        rotation_axes_weight: torch.Tensor,
+        convergence_tolerance_pos: torch.Tensor,
+        convergence_tolerance_rot: torch.Tensor,
+        out_distance: torch.Tensor,
+        out_position_distance: torch.Tensor,
+        out_rotation_distance: torch.Tensor,
+        out_position_gradient_primary: torch.Tensor,
+        out_position_gradient_secondary: torch.Tensor,
+        out_rotation_gradient_primary: torch.Tensor,
+        out_rotation_gradient_secondary: torch.Tensor,
+    ):
+        """Compute relative pose distance between two end-effectors.
+
+        Args:
+            ctx: PyTorch autograd context.
+            primary_position: Shape (batch, horizon, 3).
+            primary_quat: Shape (batch, horizon, 4) in wxyz format.
+            secondary_position: Shape (batch, horizon, 3).
+            secondary_quat: Shape (batch, horizon, 4) in wxyz format.
+            target_rel_position: Shape (3,). Target relative position in primary frame.
+            target_rel_quat: Shape (4,). Target relative quaternion in wxyz format.
+            position_weight: Scalar tensor. Weight for position error.
+            rotation_weight: Scalar tensor. Weight for rotation error.
+            position_axes_weight: Shape (3,). Per-axis position weights.
+            rotation_axes_weight: Shape (3,). Per-axis rotation weights.
+            convergence_tolerance_pos: Scalar tensor. Position convergence tolerance.
+            convergence_tolerance_rot: Scalar tensor. Rotation convergence tolerance.
+            out_distance: Shape (batch, horizon, 2). Output [pos_cost, rot_cost].
+            out_position_distance: Shape (batch, horizon, 1). Geometric position distance.
+            out_rotation_distance: Shape (batch, horizon, 1). Geometric rotation distance.
+            out_position_gradient_primary: Shape (batch, horizon, 3). Gradient w.r.t. primary position.
+            out_position_gradient_secondary: Shape (batch, horizon, 3). Gradient w.r.t. secondary position.
+            out_rotation_gradient_primary: Shape (batch, horizon, 4). Gradient w.r.t. primary quaternion.
+            out_rotation_gradient_secondary: Shape (batch, horizon, 4). Gradient w.r.t. secondary quaternion.
+
+        Returns:
+            out_distance, out_position_distance, out_rotation_distance
+        """
+        ctx.set_materialize_grads(False)
+
+        b, h, _ = primary_position.shape
+        if primary_quat.shape != (b, h, 4):
+            log_and_raise("primary_quat must have shape (batch, horizon, 4)")
+        if secondary_position.shape != (b, h, 3):
+            log_and_raise("secondary_position must have shape (batch, horizon, 3)")
+        if secondary_quat.shape != (b, h, 4):
+            log_and_raise("secondary_quat must have shape (batch, horizon, 4)")
+
+        wp_device, wp_stream = get_warp_device_stream(primary_position)
+        dim = b * h
+
+        wp.launch(
+            kernel=relative_pose_distance_kernel,
+            dim=dim,
+            inputs=[
+                wp.from_torch(primary_position.detach().view(-1, 3), dtype=wp.vec3),
+                wp.from_torch(primary_quat.detach().view(-1, 4), dtype=wp.vec4),
+                wp.from_torch(secondary_position.detach().view(-1, 3), dtype=wp.vec3),
+                wp.from_torch(secondary_quat.detach().view(-1, 4), dtype=wp.vec4),
+                wp.from_torch(target_rel_position.view(-1, 3), dtype=wp.vec3),
+                wp.from_torch(target_rel_quat.view(-1, 4), dtype=wp.vec4),
+                wp.from_torch(position_weight.view(-1), dtype=wp.float32),
+                wp.from_torch(rotation_weight.view(-1), dtype=wp.float32),
+                wp.from_torch(position_axes_weight.view(-1), dtype=wp.float32),
+                wp.from_torch(rotation_axes_weight.view(-1), dtype=wp.float32),
+                wp.from_torch(convergence_tolerance_pos.view(-1), dtype=wp.float32),
+                wp.from_torch(convergence_tolerance_rot.view(-1), dtype=wp.float32),
+                wp.from_torch(out_distance.view(-1), dtype=wp.float32),
+                wp.from_torch(out_position_distance.view(-1), dtype=wp.float32),
+                wp.from_torch(out_rotation_distance.view(-1), dtype=wp.float32),
+                wp.from_torch(out_position_gradient_primary.view(-1, 3), dtype=wp.vec3),
+                wp.from_torch(out_position_gradient_secondary.view(-1, 3), dtype=wp.vec3),
+                wp.from_torch(out_rotation_gradient_primary.view(-1, 4), dtype=wp.vec4),
+                wp.from_torch(out_rotation_gradient_secondary.view(-1, 4), dtype=wp.vec4),
+                b,
+                h,
+            ],
+            device=wp_device,
+            stream=wp_stream,
+            adjoint=False,
+        )
+
+        ctx.mark_non_differentiable(
+            out_position_distance,
+            out_rotation_distance,
+            target_rel_position,
+            target_rel_quat,
+            position_weight,
+            rotation_weight,
+            position_axes_weight,
+            rotation_axes_weight,
+            convergence_tolerance_pos,
+            convergence_tolerance_rot,
+        )
+        ctx.save_for_backward(
+            out_position_gradient_primary,
+            out_position_gradient_secondary,
+            out_rotation_gradient_primary,
+            out_rotation_gradient_secondary,
+        )
+
+        return out_distance, out_position_distance, out_rotation_distance
+
+    @staticmethod
+    @torch.autograd.function.once_differentiable
+    def backward(
+        ctx,
+        grad_distance: Optional[torch.Tensor],  # shape: (batch, horizon, 2)
+        grad_position_distance: Optional[torch.Tensor],
+        grad_rotation_distance: Optional[torch.Tensor],
+    ):
+        """Backward pass for relative pose distance.
+
+        grad_distance[..., 0] = d(total_cost)/d(position_cost)
+        grad_distance[..., 1] = d(total_cost)/d(rotation_cost)
+        """
+        pos_grad_primary = None
+        pos_grad_secondary = None
+        quat_grad_primary = None
+        quat_grad_secondary = None
+
+        if grad_distance is not None:
+            (
+                out_pos_grad_p1,
+                out_pos_grad_p2,
+                out_rot_grad_q1,
+                out_rot_grad_q2,
+            ) = ctx.saved_tensors
+
+            # Position cost gradient (index 0 of interleaved distance)
+            grad_pos = grad_distance[..., 0:1]
+            pos_grad_primary = out_pos_grad_p1 * grad_pos
+            pos_grad_secondary = out_pos_grad_p2 * grad_pos
+
+            # Rotation cost gradient (index 1 of interleaved distance)
+            grad_rot = grad_distance[..., 1:2]
+            quat_grad_primary = out_rot_grad_q1 * grad_rot
+            quat_grad_secondary = out_rot_grad_q2 * grad_rot
+
+        return (
+            pos_grad_primary,
+            quat_grad_primary,
+            pos_grad_secondary,
+            quat_grad_secondary,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+
 class ToolPoseDistance(torch.autograd.Function):
     @staticmethod
     def forward(

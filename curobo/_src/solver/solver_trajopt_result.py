@@ -405,8 +405,15 @@ class TrajOptSolverResult(BaseSolverResult):
         if self.js_solution is not None:
             new_result.js_solution = gather_joint_state_by_seed(self.js_solution, topk_seeds)
 
-        new_result.interpolated_metrics = None
-        new_result.metrics = None
+        # Preserve costs_and_constraints info for debugging (not the full tensors to save memory)
+        if self.metrics is not None and self.metrics.costs_and_constraints is not None:
+            new_result.metrics = self.metrics.clone()
+        else:
+            new_result.metrics = None
+        if self.interpolated_metrics is not None and self.interpolated_metrics.costs_and_constraints is not None:
+            new_result.interpolated_metrics = self.interpolated_metrics.clone()
+        else:
+            new_result.interpolated_metrics = None
         if self.interpolated_last_tstep is not None:
             new_result.interpolated_last_tstep = torch.gather(
                 self.interpolated_last_tstep.view(batch_size, self.num_seeds),
