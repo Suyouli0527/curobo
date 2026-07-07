@@ -1,0 +1,37 @@
+# Multipanda ROS2 Environment Scene
+# Dual-arm Franka Panda workspace for obstacle avoidance testing
+
+cuboid:
+  # 地面
+  floor:
+    dims: [2.0, 2.0, 0.02]
+    pose: [0.3, 0.0, -0.02, 1, 0, 0, 0]
+
+  # 桌子
+  table:
+    dims: [0.8, 0.6, 0.05]
+    pose: [0.45, 0.0, -0.05, 1, 0, 0, 0]
+
+  # 障碍物 1 - 中间方块
+  obstacle_center:
+    dims: [0.08, 0.08, 0.2]
+    pose: [0.4, 0.0, 0.25, 1, 0, 0, 0]
+
+  # 障碍物 2 - 左侧
+  obstacle_left:
+    dims: [0.06, 0.15, 0.15]
+    pose: [0.35, 0.15, 0.2, 1, 0, 0, 0]
+
+  # 障碍物 3 - 右侧
+  obstacle_right:
+    dims: [0.06, 0.15, 0.15]
+    pose: [0.35, -0.15, 0.2, 1, 0, 0, 0]
+
+sphere:
+  # 浮动小球
+  ball_1:
+    radius: 0.04
+    pose: [0.5, 0.08, 0.15, 1, 0, 0, 0]
+  ball_2:
+    radius: 0.04
+    pose: [0.5, -0.08, 0.15, 1, 0, 0, 0]

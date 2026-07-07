@@ -1,19 +1,19 @@
 <?xml version="1.0" ?>
-<robot name="dual_franka">
-  <link name="world_base_link" />
-  <joint name="world_to_right_arm" type="fixed">
-    <parent link="world_base_link" />
-    <child link="panda_right_base_link" />
-    <origin rpy="0 0 -1.57079632679" xyz="0 0.4 0" />
-  </joint>
-  <link name="panda_right_base_link" />
-  <joint name="panda_right_fixed" type="fixed">
-    <origin rpy="0 0 0.0" xyz="0 0 0.0" />
-    <parent link="panda_right_base_link" />
-    <child link="panda_right_link0" />
+<robot name="dual_panda">
+  <link name="world" />
+  <joint name="left_panda_fixed" type="fixed">
+    <origin rpy="0 0 0.0" xyz="0 0.26 0" />
+    <parent link="world" />
+    <child link="left_panda_link0" />
     <axis xyz="0 0 0" />
   </joint>
-  <link name="panda_right_link0">
+  <joint name="right_panda_fixed" type="fixed">
+    <origin rpy="0 0 0.0" xyz="0 -0.26 0" />
+    <parent link="world" />
+    <child link="right_panda_link0" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="left_panda_link0">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link0.dae" />
@@ -30,7 +30,7 @@
       <inertia ixx="0.0" ixy="0.0" ixz="0.002" iyy="0.0115" iyz="0.0" izz="0.0085" />
     </inertial>
   </link>
-  <link name="panda_right_link1">
+  <link name="left_panda_link1">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link1.dae" />
@@ -47,16 +47,16 @@
       <inertia ixx="0.0156" ixy="0.0" ixz="0.0" iyy="0.01439" iyz="-0.0024" izz="0.005" />
     </inertial>
   </link>
-  <joint name="panda_right_joint1" type="revolute">
+  <joint name="left_panda_joint1" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
     <origin rpy="0 0 0" xyz="0 0 0.333" />
-    <parent link="panda_right_link0" />
-    <child link="panda_right_link1" />
+    <parent link="left_panda_link0" />
+    <child link="left_panda_link1" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
   </joint>
-  <link name="panda_right_link2">
+  <link name="left_panda_link2">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link2.dae" />
@@ -73,16 +73,16 @@
       <inertia ixx="0.0166" ixy="0.0" ixz="0.0" iyy="0.0046" iyz="0.0035" izz="0.015" />
     </inertial>
   </link>
-  <joint name="panda_right_joint2" type="revolute">
+  <joint name="left_panda_joint2" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
     <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
-    <parent link="panda_right_link1" />
-    <child link="panda_right_link2" />
+    <parent link="left_panda_link1" />
+    <child link="left_panda_link2" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="87" lower="-1.7628" upper="1.7628" velocity="2.1750" />
   </joint>
-  <link name="panda_right_link3">
+  <link name="left_panda_link3">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link3.dae" />
@@ -99,16 +99,16 @@
       <inertia ixx="0.006" ixy="0.009" ixz="0.003" iyy="0.0086" iyz="0.009" izz="0.0065" />
     </inertial>
   </link>
-  <joint name="panda_right_joint3" type="revolute">
+  <joint name="left_panda_joint3" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
     <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
-    <parent link="panda_right_link2" />
-    <child link="panda_right_link3" />
+    <parent link="left_panda_link2" />
+    <child link="left_panda_link3" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
   </joint>
-  <link name="panda_right_link4">
+  <link name="left_panda_link4">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link4.dae" />
@@ -125,16 +125,16 @@
       <inertia ixx="0.0156" ixy="0.0" ixz="0.0" iyy="0.01439" iyz="-0.0024" izz="0.005" />
     </inertial>
   </link>
-  <joint name="panda_right_joint4" type="revolute">
+  <joint name="left_panda_joint4" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="-0.0698" />
     <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
-    <parent link="panda_right_link3" />
-    <child link="panda_right_link4" />
+    <parent link="left_panda_link3" />
+    <child link="left_panda_link4" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="87" lower="-3.0718" upper="-0.0698" velocity="2.1750" />
   </joint>
-  <link name="panda_right_link5">
+  <link name="left_panda_link5">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link5.dae" />
@@ -151,16 +151,16 @@
       <inertia ixx="0.02297014781" ixy="0.0" ixz="0.0" iyy="0.02095060919" iyz="0.00382345782" izz="0.00430606551" />
     </inertial>
   </link>
-  <joint name="panda_right_joint5" type="revolute">
+  <joint name="left_panda_joint5" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
     <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
-    <parent link="panda_right_link4" />
-    <child link="panda_right_link5" />
+    <parent link="left_panda_link4" />
+    <child link="left_panda_link5" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
   </joint>
-  <link name="panda_right_link6">
+  <link name="left_panda_link6">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link6.dae" />
@@ -177,16 +177,16 @@
       <inertia ixx="0.00087964522" ixy="-0.00021487814" ixz="-0.00011911662" iyy="0.00277796968" iyz="0.00001274322" izz="0.00286701969" />
     </inertial>
   </link>
-  <joint name="panda_right_joint6" type="revolute">
+  <joint name="left_panda_joint6" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
     <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
-    <parent link="panda_right_link5" />
-    <child link="panda_right_link6" />
+    <parent link="left_panda_link5" />
+    <child link="left_panda_link6" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" />
   </joint>
-  <link name="panda_right_link7">
+  <link name="left_panda_link7">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link7.dae" />
@@ -203,41 +203,28 @@
       <inertia ixx="0.00019541063" ixy="0.00000165231" ixz="0.00000148826" iyy="0.00019210361" iyz="-0.00000131132" izz="0.00017936256" />
     </inertial>
   </link>
-  <joint name="panda_right_joint7" type="revolute">
+  <joint name="left_panda_joint7" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
     <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
-    <parent link="panda_right_link6" />
-    <child link="panda_right_link7" />
+    <parent link="left_panda_link6" />
+    <child link="left_panda_link7" />
     <axis xyz="0 0 1" />
     <dynamics damping="10.0" />
     <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
   </joint>
-  <link name="panda_right_link8" />
-  <link name="panda_right_wrist_camera">
-    <visual>
-      <geometry>
-        <mesh filename="meshes/visual/wrist_camera.STL" />
-      </geometry>
-    </visual>
-  </link>
-  <joint name="panda_right_joint8" type="fixed">
+  <link name="left_panda_link8" />
+  <joint name="left_panda_joint8" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.107" />
-    <parent link="panda_right_link7" />
-    <child link="panda_right_link8" />
+    <parent link="left_panda_link7" />
+    <child link="left_panda_link8" />
     <axis xyz="0 0 0" />
   </joint>
-  <joint name="panda_right_wrist_camera_joint" type="fixed">
+  <joint name="left_panda_hand_joint" type="fixed">
+    <parent link="left_panda_link8" />
+    <child link="left_panda_hand" />
     <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
-    <parent link="panda_right_link8" />
-    <child link="panda_right_wrist_camera" />
-    <axis xyz="0 0 0" />
   </joint>
-  <joint name="panda_right_hand_joint" type="fixed">
-    <parent link="panda_right_wrist_camera" />
-    <child link="panda_right_hand" />
-    <origin rpy="0 0 0" xyz="0 0 0.003" />
-  </joint>
-  <link name="panda_right_hand">
+  <link name="left_panda_hand">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/hand.dae" />
@@ -254,13 +241,7 @@
       <inertia ixx="0.00019541063" ixy="0.00000165231" ixz="0.00000148826" iyy="0.00019210361" iyz="-0.00000131132" izz="0.00017936256" />
     </inertial>
   </link>
-  <link name="panda_right_hand_tcp" />
-  <joint name="panda_right_hand_tcp_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.1034" />
-    <parent link="panda_right_hand" />
-    <child link="panda_right_hand_tcp" />
-  </joint>
-  <link name="panda_right_leftfinger">
+  <link name="left_panda_leftfinger">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/finger.dae" />
@@ -272,7 +253,7 @@
       </geometry>
     </collision>
   </link>
-  <link name="panda_right_rightfinger">
+  <link name="left_panda_rightfinger">
     <visual>
       <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
       <geometry>
@@ -286,48 +267,42 @@
       </geometry>
     </collision>
   </link>
-  <joint name="panda_right_finger_joint1" type="prismatic">
-    <parent link="panda_right_hand" />
-    <child link="panda_right_leftfinger" />
+  <joint name="left_panda_finger_joint1" type="prismatic">
+    <parent link="left_panda_hand" />
+    <child link="left_panda_leftfinger" />
     <origin rpy="0 0 0" xyz="0 0 0.0584" />
     <axis xyz="0 1 0" />
     <dynamics damping="10.0" />
     <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
   </joint>
-  <joint name="panda_right_finger_joint2" type="prismatic">
-    <parent link="panda_right_hand" />
-    <child link="panda_right_rightfinger" />
+  <joint name="left_panda_finger_joint2" type="prismatic">
+    <parent link="left_panda_hand" />
+    <child link="left_panda_rightfinger" />
     <origin rpy="0 0 0" xyz="0 0 0.0584" />
     <axis xyz="0 -1 0" />
     <dynamics damping="10.0" />
     <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
   </joint>
-  <link name="panda_right_ee_link" />
-  <joint name="panda_right_ee_fixed_joint" type="fixed">
-    <parent link="panda_right_hand" />
-    <child link="panda_right_ee_link" />
+  <link name="left_ee_link" />
+  <joint name="left_ee_fixed_joint" type="fixed">
+    <parent link="left_panda_hand" />
+    <child link="left_ee_link" />
     <origin rpy="0 0.0 0" xyz="0.0 0. 0.1" />
   </joint>
-  <link name="panda_right_gripper">
+  <link name="left_panda_gripper">
     <inertial>
       <mass value="0.01" />
       <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001" />
       <origin rpy="0 0 0" xyz="0 0 0" />
     </inertial>
   </link>
-  <joint name="panda_right_gripper_joint" type="fixed">
+  <joint name="left_panda_gripper_joint" type="fixed">
     <origin rpy="0 0 2.35619449019" xyz="0 0 0.207" />
     <axis xyz="0 0 1" />
-    <parent link="panda_right_link7" />
-    <child link="panda_right_gripper" />
+    <parent link="left_panda_link7" />
+    <child link="left_right_gripper" />
   </joint>
-  <joint name="world_to_left_arm" type="fixed">
-    <parent link="world_base_link" />
-    <child link="panda_left_base_link" />
-    <origin rpy="0 0 1.57079632679" xyz="0 -0.4 0" />
-  </joint>
-  <link name="panda_left_base_link" />
-  <link name="panda_left_link0">
+  <link name="right_panda_link0">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link0.dae" />
@@ -344,7 +319,7 @@
       <inertia ixx="0.0" ixy="0.0" ixz="0.002" iyy="0.0115" iyz="0.0" izz="0.0085" />
     </inertial>
   </link>
-  <link name="panda_left_link1">
+  <link name="right_panda_link1">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link1.dae" />
@@ -361,7 +336,16 @@
       <inertia ixx="0.0156" ixy="0.0" ixz="0.0" iyy="0.01439" iyz="-0.0024" izz="0.005" />
     </inertial>
   </link>
-  <link name="panda_left_link2">
+  <joint name="right_panda_joint1" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+    <origin rpy="0 0 0" xyz="0 0 0.333" />
+    <parent link="right_panda_link0" />
+    <child link="right_panda_link1" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
+  </joint>
+  <link name="right_panda_link2">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link2.dae" />
@@ -378,7 +362,16 @@
       <inertia ixx="0.0166" ixy="0.0" ixz="0.0" iyy="0.0046" iyz="0.0035" izz="0.015" />
     </inertial>
   </link>
-  <link name="panda_left_link3">
+  <joint name="right_panda_joint2" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
+    <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
+    <parent link="right_panda_link1" />
+    <child link="right_panda_link2" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="87" lower="-1.7628" upper="1.7628" velocity="2.1750" />
+  </joint>
+  <link name="right_panda_link3">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link3.dae" />
@@ -395,7 +388,16 @@
       <inertia ixx="0.006" ixy="0.009" ixz="0.003" iyy="0.0086" iyz="0.009" izz="0.0065" />
     </inertial>
   </link>
-  <link name="panda_left_link4">
+  <joint name="right_panda_joint3" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+    <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
+    <parent link="right_panda_link2" />
+    <child link="right_panda_link3" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
+  </joint>
+  <link name="right_panda_link4">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link4.dae" />
@@ -412,7 +414,16 @@
       <inertia ixx="0.0156" ixy="0.0" ixz="0.0" iyy="0.01439" iyz="-0.0024" izz="0.005" />
     </inertial>
   </link>
-  <link name="panda_left_link5">
+  <joint name="right_panda_joint4" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="-0.0698" />
+    <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
+    <parent link="right_panda_link3" />
+    <child link="right_panda_link4" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="87" lower="-3.0718" upper="-0.0698" velocity="2.1750" />
+  </joint>
+  <link name="right_panda_link5">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link5.dae" />
@@ -429,7 +440,16 @@
       <inertia ixx="0.02297014781" ixy="0.0" ixz="0.0" iyy="0.02095060919" iyz="0.00382345782" izz="0.00430606551" />
     </inertial>
   </link>
-  <link name="panda_left_link6">
+  <joint name="right_panda_joint5" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+    <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
+    <parent link="right_panda_link4" />
+    <child link="right_panda_link5" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
+  </joint>
+  <link name="right_panda_link6">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link6.dae" />
@@ -446,7 +466,16 @@
       <inertia ixx="0.00087964522" ixy="-0.00021487814" ixz="-0.00011911662" iyy="0.00277796968" iyz="0.00001274322" izz="0.00286701969" />
     </inertial>
   </link>
-  <link name="panda_left_link7">
+  <joint name="right_panda_joint6" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+    <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
+    <parent link="right_panda_link5" />
+    <child link="right_panda_link6" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" />
+  </joint>
+  <link name="right_panda_link7">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/link7.dae" />
@@ -463,15 +492,28 @@
       <inertia ixx="0.00019541063" ixy="0.00000165231" ixz="0.00000148826" iyy="0.00019210361" iyz="-0.00000131132" izz="0.00017936256" />
     </inertial>
   </link>
-  <link name="panda_left_link8" />
-  <link name="panda_left_wrist_camera">
-    <visual>
-      <geometry>
-        <mesh filename="meshes/visual/wrist_camera.STL" />
-      </geometry>
-    </visual>
-  </link>
-  <link name="panda_left_hand">
+  <joint name="right_panda_joint7" type="revolute">
+    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
+    <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
+    <parent link="right_panda_link6" />
+    <child link="right_panda_link7" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="10.0" />
+    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
+  </joint>
+  <link name="right_panda_link8" />
+  <joint name="right_panda_joint8" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.107" />
+    <parent link="right_panda_link7" />
+    <child link="right_panda_link8" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <joint name="right_panda_hand_joint" type="fixed">
+    <parent link="right_panda_link8" />
+    <child link="right_panda_hand" />
+    <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+  </joint>
+  <link name="right_panda_hand">
     <visual>
       <geometry>
         <mesh filename="meshes/visual/hand.dae" />
@@ -488,157 +530,65 @@
       <inertia ixx="0.00019541063" ixy="0.00000165231" ixz="0.00000148826" iyy="0.00019210361" iyz="-0.00000131132" izz="0.00017936256" />
     </inertial>
   </link>
-  <link name="panda_left_hand_tcp" />
-  <joint name="panda_left_hand_tcp_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.1034" />
-    <parent link="panda_left_hand" />
-    <child link="panda_left_hand_tcp" />
+  <link name="right_panda_leftfinger">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/visual/finger.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/collision/finger.obj" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_panda_rightfinger">
+    <visual>
+      <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/visual/finger.dae" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/collision/finger.obj" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_panda_finger_joint1" type="prismatic">
+    <parent link="right_panda_hand" />
+    <child link="right_panda_leftfinger" />
+    <origin rpy="0 0 0" xyz="0 0 0.0584" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="10.0" />
+    <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
   </joint>
-  <link name="panda_left_leftfinger">
-    <visual>
-      <geometry>
-        <mesh filename="meshes/visual/finger.dae" />
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <mesh filename="meshes/collision/finger.obj" />
-      </geometry>
-    </collision>
-  </link>
-  <link name="panda_left_rightfinger">
-    <visual>
-      <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="meshes/visual/finger.dae" />
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="meshes/collision/finger.obj" />
-      </geometry>
-    </collision>
-  </link>
-  <link name="panda_left_ee_link" />
-  <link name="panda_left_gripper">
+  <joint name="right_panda_finger_joint2" type="prismatic">
+    <parent link="right_panda_hand" />
+    <child link="right_panda_rightfinger" />
+    <origin rpy="0 0 0" xyz="0 0 0.0584" />
+    <axis xyz="0 -1 0" />
+    <dynamics damping="10.0" />
+    <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+  </joint>
+  <link name="right_ee_link" />
+  <joint name="right_ee_fixed_joint" type="fixed">
+    <parent link="right_panda_hand" />
+    <child link="right_ee_link" />
+    <origin rpy="0 0.0 0" xyz="0.0 0. 0.1" />
+  </joint>
+  <link name="right_panda_gripper">
     <inertial>
       <mass value="0.01" />
       <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001" />
       <origin rpy="0 0 0" xyz="0 0 0" />
     </inertial>
   </link>
-  <joint name="panda_left_fixed" type="fixed">
-    <origin rpy="0 0 0.0" xyz="0 0 0.0" />
-    <parent link="panda_left_base_link" />
-    <child link="panda_left_link0" />
-    <axis xyz="0 0 0" />
-  </joint>
-  <joint name="panda_left_joint1" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
-    <origin rpy="0 0 0" xyz="0 0 0.333" />
-    <parent link="panda_left_link0" />
-    <child link="panda_left_link1" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
-  </joint>
-  <joint name="panda_left_joint2" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628" soft_upper_limit="1.7628" />
-    <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
-    <parent link="panda_left_link1" />
-    <child link="panda_left_link2" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="87" lower="-1.7628" upper="1.7628" velocity="2.1750" />
-  </joint>
-  <joint name="panda_left_joint3" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
-    <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
-    <parent link="panda_left_link2" />
-    <child link="panda_left_link3" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
-  </joint>
-  <joint name="panda_left_joint4" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718" soft_upper_limit="-0.0698" />
-    <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
-    <parent link="panda_left_link3" />
-    <child link="panda_left_link4" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="87" lower="-3.0718" upper="-0.0698" velocity="2.1750" />
-  </joint>
-  <joint name="panda_left_joint5" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
-    <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
-    <parent link="panda_left_link4" />
-    <child link="panda_left_link5" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
-  </joint>
-  <joint name="panda_left_joint6" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
-    <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
-    <parent link="panda_left_link5" />
-    <child link="panda_left_link6" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" />
-  </joint>
-  <joint name="panda_left_joint7" type="revolute">
-    <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973" soft_upper_limit="2.8973" />
-    <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
-    <parent link="panda_left_link6" />
-    <child link="panda_left_link7" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="10.0" />
-    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
-  </joint>
-  <joint name="panda_left_joint8" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.107" />
-    <parent link="panda_left_link7" />
-    <child link="panda_left_link8" />
-    <axis xyz="0 0 0" />
-  </joint>
-  <joint name="panda_left_wrist_camera_joint" type="fixed">
-    <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
-    <parent link="panda_left_link8" />
-    <child link="panda_left_wrist_camera" />
-    <axis xyz="0 0 0" />
-  </joint>
-  <joint name="panda_left_hand_joint" type="fixed">
-    <parent link="panda_left_wrist_camera" />
-    <child link="panda_left_hand" />
-    <origin rpy="0 0 0" xyz="0 0 0.003" />
-  </joint>
-  <joint name="panda_left_finger_joint1" type="prismatic">
-    <parent link="panda_left_hand" />
-    <child link="panda_left_leftfinger" />
-    <origin rpy="0 0 0" xyz="0 0 0.0584" />
-    <axis xyz="0 1 0" />
-    <dynamics damping="10.0" />
-    <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
-  </joint>
-  <joint name="panda_left_finger_joint2" type="prismatic">
-    <parent link="panda_left_hand" />
-    <child link="panda_left_rightfinger" />
-    <origin rpy="0 0 0" xyz="0 0 0.0584" />
-    <axis xyz="0 -1 0" />
-    <dynamics damping="10.0" />
-    <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
-  </joint>
-  <joint name="panda_left_ee_fixed_joint" type="fixed">
-    <parent link="panda_left_hand" />
-    <child link="panda_left_ee_link" />
-    <origin rpy="0 0.0 0" xyz="0.0 0. 0.1" />
-  </joint>
-  <joint name="panda_left_gripper_joint" type="fixed">
+  <joint name="right_panda_gripper_joint" type="fixed">
     <origin rpy="0 0 2.35619449019" xyz="0 0 0.207" />
     <axis xyz="0 0 1" />
-    <parent link="panda_left_link7" />
-    <child link="panda_left_gripper" />
+    <parent link="right_panda_link7" />
+    <child link="right_right_gripper" />
   </joint>
 </robot>
