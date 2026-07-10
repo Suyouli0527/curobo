@@ -1,5 +1,0 @@
-# test_board.yml — 单竖板测试场景
-cuboid:
-  board:
-    dims: [0.02, 0.5, 0.6]
-    pose: [0.5, 0.0, 0.31, 1, 0, 0, 0]
