@@ -15,21 +15,21 @@ robot_cfg:
       default_joint_position: [0.0, -1.3, 0.0, -2.5, 0.0, 1.5, 0.8, 0.04, 0.04, 0.0, -1.3, 0.0, -2.5, 0.0, 1.5, 0.8, 0.04, 0.04]
     tool_frames: [panda_left_hand_tcp, panda_right_hand_tcp]
     extra_collision_spheres:
-      attached_object_right: 4
-      attached_object_left: 4
+      attached_object_right: 32
+      attached_object_left: 32
     extra_links:
       attached_object_right:
         fixed_transform: [0, 0, 0, 1, 0, 0, 0]
         joint_name: attach_joint
         joint_type: FIXED
         link_name: attached_object_right
-        parent_link_name: panda_right_hand
+        parent_link_name: panda_right_hand_tcp
       attached_object_left:
         fixed_transform: [0, 0, 0, 1, 0, 0, 0]
         joint_name: attach_joint_1
         joint_type: FIXED
         link_name: attached_object_left
-        parent_link_name: panda_left_hand
+        parent_link_name: panda_left_hand_tcp
     lock_joints:
       panda_right_finger_joint1: 0.04
       panda_right_finger_joint2: 0.04
@@ -99,8 +99,8 @@ robot_cfg:
       panda_left_rightfinger: [panda_left_hand, panda_left_wrist_camera]
       panda_left_ee_link: [panda_left_hand]
       panda_left_gripper: [panda_left_link7]
-      attached_object_right: [panda_right_hand, panda_right_leftfinger, panda_right_rightfinger]
-      attached_object_left: [panda_left_hand, panda_left_leftfinger, panda_left_rightfinger]
+      attached_object_right: [panda_right_link0, panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger, panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger, attached_object_left]
+      attached_object_left: [panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger, panda_right_link0, panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger, attached_object_right]
     urdf_path: robot/franka_description/dual_franka_with_camera.urdf
     use_global_cumul: true
     collision_spheres:

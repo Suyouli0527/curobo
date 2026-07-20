@@ -8,13 +8,45 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import time
 
 import numpy as np
 
 from run.scene import load_scene_yaml, setup_viser, render_scene_obstacles, create_control_frames
 from run.controller import DualArmMPCController
 from run.gripper import Gripper
+from run.recorder import MPCRecorder
+
+
+def _draw_spheres(server, controller, spheres_list):
+    """附着球可视化：首次创建，后续只更新位置。左红右蓝。"""
+    kin = controller.mpc.compute_kinematics(controller.current_state)
+    world_sph = kin.get_link_spheres().squeeze(1).cpu().numpy()[0]
+    kparams = controller.mpc.core.kinematics.config.kinematics_config
+
+    if not spheres_list:
+        # 首次创建
+        for arm, link_name, color in [("left", "attached_object_left", (255, 60, 60)),
+                                       ("right", "attached_object_right", (60, 60, 255))]:
+            idx = kparams.get_sphere_index_from_link_name(link_name).cpu().numpy()
+            ws = world_sph[idx, :]
+            active = ws[ws[:, 3] > -99]
+            for i, s in enumerate(active):
+                sph = server.scene.add_icosphere(
+                    f"/debug/{arm}_{i}",
+                    radius=float(s[3]),
+                    position=s[:3],
+                    color=np.array(color, dtype=np.uint8),
+                )
+                spheres_list.append((sph, link_name, i))
+        return
+
+    # 更新位置
+    for sph, link_name, i in spheres_list:
+        idx = kparams.get_sphere_index_from_link_name(link_name).cpu().numpy()
+        ws = world_sph[idx, :]
+        active = ws[ws[:, 3] > -99]
+        if i < len(active):
+            sph.position = active[i][:3]
 
 
 def main():
@@ -30,8 +62,8 @@ def main():
     viser_viz, server = setup_viser(args.robot, args.port)
     obstacle_info = render_scene_obstacles(server, scene_dict)
 
-    controller = DualArmMPCController(robot_file=args.robot, scene_dict=scene_dict)
-    gripper = Gripper(obstacle_info)
+    controller = DualArmMPCController(robot_file=args.robot, scene_dict=scene_dict, master_slave=True)
+    gripper = Gripper(obstacle_info, controller=controller)
 
     (left_pos, left_wxyz), (right_pos, right_wxyz) = controller.compute_ee_poses()
     left_frame, right_frame = create_control_frames(
@@ -39,6 +71,12 @@ def main():
     )
     controller.set_initial_goal((left_pos, left_wxyz), (right_pos, right_wxyz))
     viser_viz.set_joint_state(controller.current_state.squeeze(0))
+
+    rel_pos_disp = server.gui.add_number("Rel Pos Err (mm)", 0.0, min=0.0, max=500.0, step=0.1, disabled=True)
+    rel_rot_disp = server.gui.add_number("Rel Rot Err (deg)", 0.0, min=0.0, max=180.0, step=0.1, disabled=True)
+
+    # 附着球可视化
+    debug_spheres = []
 
     pending_coord_toggle = False
     pending_grasp = False
@@ -77,11 +115,16 @@ def main():
     left_prev_wxyz = left_wxyz.copy()
     right_prev_wxyz = right_wxyz.copy()
 
+    # 数据记录
+    recorder = MPCRecorder()
+
     try:
         while True:
             if pending_coord_toggle:
                 pending_coord_toggle = False
-                controller.toggle_coordination()
+                controller.toggle_coordination(
+                    (left_frame.position, left_frame.wxyz),
+                    (right_frame.position, right_frame.wxyz))
                 coord_btn.color = (
                     (255, 165, 0) if controller.coordinated else (128, 128, 128)
                 )
@@ -91,10 +134,17 @@ def main():
             if pending_grasp:
                 pending_grasp = False
                 (l, _), (r, _) = controller.compute_ee_poses()
-                gripper.grasp((l + r) / 2, (l + r) / 2)
+                if gripper.grasp((l + r) / 2,
+                                 (left_frame.position, left_frame.wxyz),
+                                 (right_frame.position, right_frame.wxyz)):
+                    coord_btn.color = (255, 165, 0)
+                    recorder.mark_grasp()
             if pending_release:
                 pending_release = False
-                gripper.release()
+                if gripper.release():
+                    coord_btn.color = (128, 128, 128)
+                    for s, _, _ in debug_spheres: s.remove()
+                    debug_spheres.clear()
 
             pose_changed = False
             left_moved = (
@@ -151,21 +201,33 @@ def main():
                         (right_prev_pos, right_prev_wxyz),
                     )
 
-            if controller.step():
+            step_result = controller.step()
+            if step_result["success"]:
                 viser_viz.set_joint_state(controller.current_state.squeeze(0))
-                if gripper.attached_name is not None:
-                    (l, _), (r, _) = controller.compute_ee_poses()
-                    gripper.update((l + r) / 2)
                 step += 1
+                pe, re = controller.compute_rel_pose_error()
+                recorder.record(step_result["solve_time"],
+                               step_result["min_scene_dist"],
+                               step_result["min_self_dist"],
+                               rel_pos_err=pe, rel_rot_err=re,
+                               obj_val=step_result.get("obj_val", 0.0))
+                if step % 50 == 0 and step_result.get("pos_err") is not None:
+                    print(f"  Step {step}  pos_err={step_result['pos_err']*1000:.1f}mm")
+                if step % 10 == 0:
+                    rel_pos_disp.value = pe
+                    rel_rot_disp.value = re
                 if step % 100 == 0:
                     print(f"  Step {step}")
 
-            time.sleep(0.001)
+            if gripper.attached_name is not None:
+                _draw_spheres(server, controller, debug_spheres)
 
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:
         controller.destroy()
+        recorder.save()
+        recorder.save_attach()
 
 
 if __name__ == "__main__":

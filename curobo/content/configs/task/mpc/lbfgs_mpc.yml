@@ -33,7 +33,7 @@ rollout:
       use_lie_group: false
 
       weight:
-      - 5000.0
+      - 50000.0
       - 200.0
       _terminal_pose_convergence_tolerance:
       - 0.0
@@ -43,7 +43,7 @@ rollout:
 
   constraint_cfg:
     scene_collision_cfg:
-      activation_distance: 0.01
+      activation_distance: 0.03
       use_speed_metric: true
       use_sweep: true
       use_sweep_kernel: true
@@ -63,7 +63,7 @@ optimizer:
   epsilon: 0.01
   fixed_iters: true
   history: 27
-  inner_iters: 25
+  inner_iters: 20
   last_best: 10
   line_search_scale:
   - 0.0
@@ -71,10 +71,10 @@ optimizer:
   - 0.5
   - 1.0
   line_search_type: approx_wolfe
-  num_iters: 50
+  num_iters: 40
   num_problems: 1
   stable_mode: true
-  step_scale: 0.98
+  step_scale: 0.8
   store_debug: false
   sync_cuda_time: true
   use_coo_sparse: true

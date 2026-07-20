@@ -105,6 +105,7 @@ class AttachmentManager:
         joint_states: JointState,
         link_name: str = "attached_object",
         world_objects_pose_offset: Optional[Pose] = None,
+        ee_link: Optional[str] = None,
     ) -> None:
         """Compute per-env obstacle-to-link offsets and write link-local spheres.
 
@@ -118,6 +119,8 @@ class AttachmentManager:
             link_name: Robot link to which obstacles are attached.
             world_objects_pose_offset: Obstacle world pose(s) [num_envs] or [1] (broadcast).
                 When None, obstacles are assumed at the link origin (identity offset).
+            ee_link: End-effector link name for computing offset transform.
+                Defaults to ``tool_frames[0]`` for backward compatibility.
         """
         q = joint_states.position
         if q.dim() == 1:
@@ -140,7 +143,8 @@ class AttachmentManager:
         radii = sphere_tensor[:, 3]
 
         if world_objects_pose_offset is not None:
-            ee_link = self._kinematics.tool_frames[0]
+            if ee_link is None:
+                ee_link = self._kinematics.tool_frames[0]
             joint_state = JointState.from_position(
                 q, joint_names=self._kinematics.joint_names,
             )
@@ -189,6 +193,7 @@ class AttachmentManager:
         sphere_fit_type: SphereFitType = SphereFitType.MORPHIT,
         world_objects_pose_offset: Optional[Pose] = None,
         disable_obstacle_names: Optional[List[str]] = None,
+        ee_link: Optional[str] = None,
     ) -> None:
         """Fit spheres, update all envs, and optionally disable world obstacles.
 
@@ -204,6 +209,7 @@ class AttachmentManager:
             sphere_fit_type: Fitting algorithm.
             world_objects_pose_offset: Obstacle world pose(s) [num_envs] or [1] (broadcast).
             disable_obstacle_names: World obstacle names to disable across all envs.
+            ee_link: End-effector link for offset computation.
         """
         sphere_tensor = self.fit_spheres(
             obstacles,
@@ -211,7 +217,7 @@ class AttachmentManager:
             surface_radius=surface_radius,
             sphere_fit_type=sphere_fit_type,
         )
-        self.update(sphere_tensor, joint_states, link_name, world_objects_pose_offset)
+        self.update(sphere_tensor, joint_states, link_name, world_objects_pose_offset, ee_link=ee_link)
 
         if disable_obstacle_names and self._scene_collision is not None:
             num_envs = self._get_num_envs(joint_states)
@@ -232,6 +238,7 @@ class AttachmentManager:
         surface_radius: float = 0.002,
         sphere_fit_type: SphereFitType = SphereFitType.MORPHIT,
         world_objects_pose_offset: Optional[Pose] = None,
+        ee_link: Optional[str] = None,
     ) -> None:
         """Attach obstacles that already exist in the scene, looked up by name.
 
@@ -247,6 +254,7 @@ class AttachmentManager:
             surface_radius: Radius for surface-sampled spheres.
             sphere_fit_type: Fitting algorithm.
             world_objects_pose_offset: Obstacle world pose(s) [num_envs] or [1] (broadcast).
+            ee_link: End-effector link for offset computation.
         """
         if self._scene_collision is None:
             log_and_raise(
@@ -279,6 +287,7 @@ class AttachmentManager:
             sphere_fit_type=sphere_fit_type,
             world_objects_pose_offset=world_objects_pose_offset,
             disable_obstacle_names=obstacle_names,
+            ee_link=ee_link,
         )
 
     def detach(
