@@ -6,7 +6,6 @@
 
 \usepackage[UTF8]{ctex}           % 中文支持
 \usepackage{amsmath,amssymb}       % 数学宏包
-\usepackage{bm}                    % 加粗希腊字母
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{booktabs}              % 三线表
 \usepackage{xcolor}
@@ -57,13 +56,14 @@ J_{\text{pose}} = \sum_{f \in \mathcal{F}} \sum_{k=1}^{N}
 其中 $\mathbf{W}_p = \operatorname{diag}(\hat{w}_x^p, \hat{w}_y^p, \hat{w}_z^p) \in \mathbb{R}^{3 \times 3}$ 为逐轴位置权重矩阵，
 $\odot$ 为逐元素乘法。$\boldsymbol{\omega}_{k,f} = \theta_{k,f} \cdot \mathbf{a}_{k,f}$ 为 axis-angle 表示，由相对旋转提取：
 %
-\begin{align}
-\mathbf{q}_{\Delta} &= \mathbf{q}_{k,f} \otimes \bigl(\mathbf{q}_f^{\text{goal}}\bigr)^{-1} \notag\\
-\mathbf{v} &= \mathbf{W}_r \odot \operatorname{vec}(\mathbf{q}_{\Delta}) \notag\\
-\theta &= 2 \operatorname{arctan2}\bigl(\lVert\mathbf{v}\rVert,\; |w|\bigr) \notag\\
-\mathbf{a} &= \frac{\mathbf{v}}{\lVert\mathbf{v}\rVert} \qquad (\text{当 } \lVert\mathbf{v}\rVert > \varepsilon) \notag\\
-\boldsymbol{\omega}_{k,f} &= \theta \cdot \mathbf{a} \notag
-\end{align}
+\begin{align*}
+\mathbf{q}_{\Delta} &= \mathbf{q}_{k,f} \otimes \bigl(\mathbf{q}_f^{\text{goal}}\bigr)^{-1} \\
+\mathbf{v} &= \mathbf{W}_r \odot \operatorname{vec}(\mathbf{q}_{\Delta}) \\
+\theta &= 2 \operatorname{arctan2}\bigl(\lVert\mathbf{v}\rVert,\; |w|\bigr) \\
+\mathbf{a} &= \frac{\mathbf{v}}{\lVert\mathbf{v}\rVert}
+	\qquad (\lVert\mathbf{v}\rVert > \varepsilon \text{ 时}) \\
+\boldsymbol{\omega}_{k,f} &= \theta \cdot \mathbf{a}
+\end{align*}
 
 梯度表达式：
 %
