@@ -76,10 +76,10 @@ $$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = 
 
 对每个末端执行器 frame $f \in \mathcal{F}$，使用 **axis-angle** 方法（`use_lie_group: false`）：
 
-$$\boxed{J_{\text{pose}} = \sum_{f \in \mathcal{F}} \sum_{k=1}^{N} \left[ \frac{w_p}{2} \|\mathbf{W}_p \odot (\mathbf{p}_{k,f} - \mathbf{p}_f^{\text{goal}})\|^2 + w_r \|\boldsymbol{\omega}_{k,f}\|^2 \right]}$$
+$$J_{\text{pose}} = \sum_{f \in \mathcal{F}} \sum_{k=1}^{N} \left[ \frac{w_p}{2} \|\mathbf{W}_p \odot (\mathbf{p}_{k,f} - \mathbf{p}_f^{\text{goal}})\|^2 + w_r \|\boldsymbol{\omega}_{k,f}\|^2 \right]$$
 
 其中 $\boldsymbol{\omega}_{k,f} = \theta_{k,f} \cdot \mathbf{a}_{k,f}$ 为 axis-angle 表示，由 $\mathbf{q}_{k,f} \otimes (\mathbf{q}_f^{\text{goal}})^{-1}$ 提取：
-$\theta = 2\arctan2(\|\mathbf{v}\|, |w|)$，$\mathbf{a} = \mathbf{v}/\|\mathbf{v}\|$，$\mathbf{v} = \mathbf{W}_r \odot \text{vec}(\mathbf{q}_\Delta)$。
+$\theta = 2\operatorname{arctan2}(\|\mathbf{v}\|, |w|)$，$\mathbf{a} = \mathbf{v}/\|\mathbf{v}\|$，$\mathbf{v} = \mathbf{W}_r \odot \text{vec}(\mathbf{q}_\Delta)$。
 
 位置梯度：$\nabla_{\mathbf{p}} = w_p \cdot \mathbf{W}_p^2 \odot (\mathbf{p} - \mathbf{p}^{\text{goal}})$。
 
@@ -94,7 +94,7 @@ $\theta = 2\arctan2(\|\mathbf{v}\|, |w|)$，$\mathbf{a} = \mathbf{v}/\|\mathbf{v
 对每个关节 $d$ 的每个状态量 $s \in \{\text{pos}, \text{vel}, \text{acc}, \text{jerk}, \text{torque}\}$，
 当状态超出**激活距离收缩后的边界**时施加二次惩罚：
 
-$$\boxed{J_{\text{bound}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \sum_{s} \frac{w_b^s}{2} \Big[ \max^2\!\big(0,\; x_{k,d}^s - \bar{u}_d^s\big) + \max^2\!\big(0,\; \bar{l}_d^s - x_{k,d}^s\big) \Big]}$$
+$$J_{\text{bound}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \sum_{s} \frac{w_b^s}{2} \Big[ \max^2\!\big(0,\; x_{k,d}^s - \bar{u}_d^s\big) + \max^2\!\big(0,\; \bar{l}_d^s - x_{k,d}^s\big) \Big]$$
 
 其中收缩边界为：
 $$\bar{l}_d^s = l_d^s + \eta^s (u_d^s - l_d^s), \qquad \bar{u}_d^s = u_d^s - \eta^s (u_d^s - l_d^s)$$
@@ -117,7 +117,7 @@ $$\bar{l}_d^s = l_d^s + \eta^s (u_d^s - l_d^s), \qquad \bar{u}_d^s = u_d^s - \et
 
 对速度、加速度、加加速度始终施加 Tikhonov 正则化（与 bound 惩罚独立）：
 
-$$\boxed{J_{\text{reg}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \frac{1}{2} \Big[ \lambda_v \dot{q}_{k,d}^2 + \lambda_a \ddot{q}_{k,d}^2 + \lambda_j \dddot{q}_{k,d}^2 \Big]}$$
+$$J_{\text{reg}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \frac{1}{2} \Big[ \lambda_v \dot{q}_{k,d}^2 + \lambda_a \ddot{q}_{k,d}^2 + \lambda_j \dddot{q}_{k,d}^2 \Big]$$
 
 | 正则化项 | 权重 | 说明 |
 |---------|------|------|
@@ -135,7 +135,7 @@ $$\boxed{J_{\text{reg}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \frac{1}{2} \Big[ \lambd
 
 将轨迹拉向默认关节配置（retract pose），终端权重远大于非终端：
 
-$$\boxed{J_{\text{target}} = \sum_{k=1}^{N} \alpha_k \, w_t \sum_{d=1}^{d} (q_{k,d} - q_d^{\text{target}})^2}$$
+$$J_{\text{target}} = \sum_{k=1}^{N} \alpha_k \, w_t \sum_{d=1}^{d} (q_{k,d} - q_d^{\text{target}})^2$$
 
 $$\alpha_k = \begin{cases} 1.0 & k = N \text{ (terminal knot)} \\ 0.05 & k < N \text{ (non-terminal)} \end{cases}$$
 
@@ -147,7 +147,7 @@ $$\alpha_k = \begin{cases} 1.0 & k = N \text{ (terminal knot)} \\ 0.05 & k < N \
 
 双臂协同搬运时启用，约束 secondary 末端相对于 primary 末端的位姿：
 
-$$\boxed{J_{\text{rel}} = \sum_{k=1}^{N} \left[ \frac{w_{\text{rel},p}}{2} \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\|^2 + w_{\text{rel},r} \|\boldsymbol{\omega}_k^{\text{rel}}\|^2 \right]}$$
+$$J_{\text{rel}} = \sum_{k=1}^{N} \left[ \frac{w_{\text{rel},p}}{2} \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\|^2 + w_{\text{rel},r} \|\boldsymbol{\omega}_k^{\text{rel}}\|^2 \right]$$
 
 其中相对位姿在 primary 局部坐标系中计算：
 $$\Delta\mathbf{p}_k = \mathbf{q}_{k,\text{primary}}^* \odot (\mathbf{p}_{k,\text{secondary}} - \mathbf{p}_{k,\text{primary}})$$
@@ -161,14 +161,14 @@ $$\Delta\mathbf{q}_k = \mathbf{q}_{k,\text{primary}}^* \otimes \mathbf{q}_{k,\te
 
 对每个 robot sphere $i$ 在每个时间步，使用 **平滑激活函数**（C¹ 连续，quadratic-linear transition）：
 
-$$\boxed{C_{\text{scene}} = w_{\text{col}} \sum_{k=1}^{N} \sum_{i=1}^{N_s} f_\eta\!\big(d_{k,i}^{\text{pen}}\big)}$$
+$$C_{\text{scene}} = w_{\text{col}} \sum_{k=1}^{N} \sum_{i=1}^{N_s} f_\eta\!\big(d_{k,i}^{\text{pen}}\big)$$
 
 其中穿透深度为 $d_{k,i}^{\text{pen}} = r_i + a_{\text{col}} - \text{sdf}(\mathbf{c}_i)$（sdf 在障碍物内部为负），
 平滑激活函数定义（`wp_collision_common.py:12-38`）：
 
 $$f_\eta(d) = \begin{cases}
-0 & d \le 0 \\[2pt]
-\dfrac{d^2}{2\eta} & 0 < d \le \eta \quad \text{(quadratic region)} \\[6pt]
+0 & d \le 0 \\
+\dfrac{d^2}{2\eta} & 0 < d \le \eta \quad \text{(quadratic region)} \\
 d - \dfrac{\eta}{2} & d > \eta \quad \text{(linear region)}
 \end{cases}$$
 
@@ -182,7 +182,7 @@ Sweep 模式 (`use_sweep: true`, `use_speed_metric: true`) 额外考虑 sphere �
 
 对所有预定义的 sphere pair $(i,j)$，使用平方距离差惩罚：
 
-$$\boxed{C_{\text{self}} = w_{\text{self}} \sum_{k=1}^{N} \max_{(i,j)} \left[ \frac{1}{2} \max\!\big(0,\; (r_i + r_j + \delta_{ij})^2 - \|\mathbf{c}_{k,i} - \mathbf{c}_{k,j}\|^2 \big) \right]}$$
+$$C_{\text{self}} = w_{\text{self}} \sum_{k=1}^{N} \max_{(i,j)} \left[ \frac{1}{2} \max\!\big(0,\; (r_i + r_j + \delta_{ij})^2 - \|\mathbf{c}_{k,i} - \mathbf{c}_{k,j}\|^2 \big) \right]$$
 
 其中 $\delta_{ij}$ 为 pair-specific padding（碰撞缓冲）。梯度：
 
@@ -196,7 +196,7 @@ $$\nabla_{\mathbf{c}_i} = -w_{\text{self}} (\mathbf{c}_i - \mathbf{c}_j), \quad 
 
 通过 `convert_to_binary: True` 将相对位姿代价转为二值约束，带容差 $\delta_p, \delta_r$：
 
-$$\boxed{C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N} \Big[ \max\!\big(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p\big) + \max\!\big(0,\; \theta_k^{\text{rel}} - \delta_r\big) \Big]}$$
+$$C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N} \Big[ \max\!\big(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p\big) + \max\!\big(0,\; \theta_k^{\text{rel}} - \delta_r\big) \Big]$$
 
 ---
 
