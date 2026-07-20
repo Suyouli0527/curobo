@@ -59,3 +59,57 @@ run/
 ## 退出
 
 按 `Ctrl+C` 退出，自动保存性能曲线到 `run/plots/`。
+
+## MPC 目标函数
+
+### 软代价
+
+$$\min_{u} \sum_{k=1}^{N} J_{\text{pose}} + J_{\text{cspace}} + J_{\text{reg}} + J_{\text{target}} + J_{\text{rel}}$$
+
+**末端追踪：**
+
+$$J_{\text{pose}} = \frac{50000}{2} \|\mathbf{p}_k - \mathbf{p}_{goal}\|^2 + 200 \| \log(\mathbf{q}_k^{-1} \otimes \mathbf{q}_{goal}) \|^2$$
+
+**关节空间：**
+
+$$J_{\text{cspace}} = 1000 \|\dot{\mathbf{q}}\|^2 + 1000 \|\ddot{\mathbf{q}}\|^2 + 1000 \|\dddot{\mathbf{q}}\|^2 + 100 \|\dot{\boldsymbol{\tau}}\|^2$$
+
+**L2 正则：**
+
+$$J_{\text{reg}} = 0.01 \|\dot{\mathbf{q}}\|^2 + 10000 \|\ddot{\mathbf{q}}\|^2 + 10 \|\dddot{\mathbf{q}}\|^2$$
+
+**关节目标：**
+
+$$J_{\text{target}} = \alpha_k \cdot 1000 \cdot \|\mathbf{q}_k - \mathbf{q}_{target}\|^2, \quad \alpha_k = \begin{cases} 1, & k=N \\ 0.05, & k<N \end{cases}$$
+
+**双臂协同：**
+
+$$J_{\text{rel}} = \frac{50000}{2} \|\Delta\mathbf{p} - \Delta\mathbf{p}_{target}\|^2 + 5000 \| \log(\Delta\mathbf{q}^{-1} \otimes \Delta\mathbf{q}_{target}) \|^2$$
+
+### 硬约束
+
+**场景碰撞 (swept-sphere, act=30mm)：**
+
+$$C_{\text{scene}} = 10000 \cdot \sum_i \max(0,\ 0.03 - d_i) \leq 0$$
+
+**自碰撞：**
+
+$$C_{\text{self}} = 100000 \cdot \sum_{(i,j)} \max(0,\ pad_{ij} - d_{ij}) \leq 0$$
+
+**双臂协同 (tol 10mm / 0.05rad)：**
+
+$$C_{\text{rel}} = \begin{cases} 0, & \|\Delta\mathbf{p} - \Delta\mathbf{p}_{target}\| < 0.01 \land \theta < 0.05 \\ 500000 \cdot e_p + 50000 \cdot e_r, & \text{否则} \end{cases}$$
+
+### 预测参数
+
+| 参数 | 值 |
+|------|-----|
+| `n_knots` (action horizon) | 16 |
+| `optimization_dt` | 0.025s |
+| `interpolation_steps` | 4 |
+| prediction horizon | 0.4s |
+| cold start | 100 iters |
+| warm start | 100 iters |
+| LBFGS num_iters | 40 |
+| LBFGS inner_iters | 20 |
+| step_scale | 0.8 |
