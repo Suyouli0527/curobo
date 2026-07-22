@@ -64,7 +64,7 @@ run/
 
 ### 优化问题
 
-$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + C_{\text{scene}} + C_{\text{self}} + J_{\text{rel}}$$
+$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + J_{\text{rel}} + C_{\text{scene}} + C_{\text{self}}$$
 
 其中 $N=16$ 为 B-spline knot 数 (action horizon)，$d=14$ 为关节自由度 (双臂各 7 DoF)。
 

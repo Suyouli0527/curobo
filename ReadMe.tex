@@ -26,8 +26,8 @@
 \begin{equation}
 \min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \;
 \mathcal{L}(\mathbf{u}) =
-J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}}
-+ C_{\text{scene}} + C_{\text{self}} + J_{\text{rel}}
+J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + J_{\text{rel}}
++ C_{\text{scene}} + C_{\text{self}}
 \label{eq:full}
 \end{equation}
 
@@ -302,11 +302,11 @@ $\lambda_j$          & Jerk L2 regularization      & \texttt{squared\_l2\_reg\_w
 $\eta^s$             & Bound activation (5 dims)   & \texttt{activation\_distance[*]}             & 0.01   \\
 $w_t$                & Joint target distance       & \texttt{cspace\_target\_weight}             & 1000   \\
 $\alpha_N$ / $\alpha_{<N}$ & Terminal / non-term.    & \texttt{cspace\_non\_terminal\_weight\_factor} & 1 / 0.05 \\
+$w_{\text{rel},p}$   & Coordination position        & \texttt{controller.py}                      & 7500 \\
+$w_{\text{rel},r}$   & Coordination rotation        & \texttt{controller.py}                      & 750  \\
 $w_{\text{col}}$     & Scene collision soft        & \texttt{scene\_collision\_cfg.weight}       & 10000  \\
 $\eta$               & Collision activation dist.  & \texttt{scene\_collision\_cfg.activation\_distance} & 0.03 m \\
 $w_{\text{self}}$    & Self-collision soft         & \texttt{self\_collision\_cfg.weight}        & 100000 \\
-$w_{\text{rel},p}$   & Coordination position        & \texttt{controller.py}                      & 7500 \\
-$w_{\text{rel},r}$   & Coordination rotation        & \texttt{controller.py}                      & 750  \\
 \bottomrule
 \end{tabular}
 \end{table}
