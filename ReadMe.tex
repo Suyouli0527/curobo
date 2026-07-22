@@ -255,6 +255,31 @@ the worst collision pair per timestep, producing a \textbf{sparse gradient}:
 \end{equation}
 computed only for the maximally penetrating pair.
 
+\section{Cost / Constraint / Convergence Taxonomy}
+
+In cuRobo's rollout architecture, cost terms are classified into three categories:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Category & Config Field & Behavior & Examples \\
+\midrule
+\textbf{Cost}       & \texttt{cost\_cfg}       & Smooth penalty, minimized by optimizer & Pose error, cspace distance, smoothness \\
+\textbf{Constraint} & \texttt{constraint\_cfg} & Binary feasibility (\texttt{convert\_to\_binary: True}) & Collision, joint limits \\
+\textbf{Convergence}& \texttt{convergence\_cfg} & Tolerance check for termination & Position/orientation tolerance \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Success condition = $\text{feasible} \land \text{converged}$.
+Feasibility requires all constraint values $\le 0$.
+Convergence requires all tolerance metrics below their thresholds.
+
+\textbf{Important:} During MPC optimization, collision costs in both \texttt{cost\_cfg}
+and \texttt{constraint\_cfg} use \textbf{soft cost formulation}
+(\texttt{convert\_to\_binary} is not set). Binary conversion only occurs in the
+metrics rollout when evaluating feasibility.
+
 \section{Weight Tables}
 
 \begin{table}[h]
@@ -309,30 +334,5 @@ Warm start iters   & Warm-start warmup iterations              & 200      \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\section{Cost / Constraint / Convergence Taxonomy}
-
-In cuRobo's rollout architecture, cost terms are classified into three categories:
-
-\begin{center}
-\begin{tabular}{@{}llll@{}}
-\toprule
-Category & Config Field & Behavior & Examples \\
-\midrule
-\textbf{Cost}       & \texttt{cost\_cfg}       & Smooth penalty, minimized by optimizer & Pose error, cspace distance, smoothness \\
-\textbf{Constraint} & \texttt{constraint\_cfg} & Binary feasibility (\texttt{convert\_to\_binary: True}) & Collision, joint limits \\
-\textbf{Convergence}& \texttt{convergence\_cfg} & Tolerance check for termination & Position/orientation tolerance \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Success condition = $\text{feasible} \land \text{converged}$.
-Feasibility requires all constraint values $\le 0$.
-Convergence requires all tolerance metrics below their thresholds.
-
-\textbf{Important:} During MPC optimization, collision costs in both \texttt{cost\_cfg}
-and \texttt{constraint\_cfg} use \textbf{soft cost formulation}
-(\texttt{convert\_to\_binary} is not set). Binary conversion only occurs in the
-metrics rollout when evaluating feasibility.
 
 \end{document}
