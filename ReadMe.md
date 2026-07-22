@@ -143,11 +143,11 @@ $$\alpha_k = \begin{cases} 1.0 & k = N \text{ (terminal knot)} \\ 0.05 & k < N \
 
 ---
 
-### 5. 相对位姿硬约束 $J_{\text{rel}}$（运行时可选，hinge + deadzone）
+### 5. 相对位姿协同 $J_{\text{rel}}$（运行时可选）
 
-偏差在死区 $\delta_p, \delta_r$ 内时约束不激活（cost=0, grad=0）。超出死区后连续二次惩罚，高权重保证约束效果，梯度可追踪。
+简单 L2 代价，始终可微，LBFGS 最擅长的形式。
 
-$$J_{\text{rel}} = \sum_{k=1}^{N} \Big[ w_{\text{rel},p}^{\text{hard}} \cdot \bigl[\max(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p)\bigr]^2 + w_{\text{rel},r}^{\text{hard}} \cdot \bigl[\max(0,\; \theta_k^{\text{rel}} - \delta_r)\bigr]^2 \Big]$$
+$$J_{\text{rel}} = \sum_{k=1}^{N} \Big[ \frac{w_{\text{rel},p}}{2} \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\|^2 + w_{\text{rel},r} \|\boldsymbol{\omega}_k^{\text{rel}}\|^2 \Big]$$
 
 其中相对位姿在 primary 局部坐标系中计算：
 $$\Delta\mathbf{p}_k = \mathbf{q}_{k,\text{primary}}^* \odot (\mathbf{p}_{k,\text{secondary}} - \mathbf{p}_{k,\text{primary}})$$
@@ -206,13 +206,11 @@ $$\nabla_{\mathbf{c}_i} = -w_{\text{self}} (\mathbf{c}_i - \mathbf{c}_j), \quad 
 | $\eta^s$ | Bound 激活距离（全部 5 维） | `activation_distance[*]` | 0.01 |
 | $w_t$ | 关节目标距离 | `cspace_target_weight` | 1000 |
 | $\alpha_k$ | 终端权重因子 | `cspace_non_terminal_weight_factor` | 1 (term), 0.05 (non-term) |
+| $w_{\text{rel},p}$ | 协同位置 | `controller.py` | 7500 |
+| $w_{\text{rel},r}$ | 协同姿态 | `controller.py` | 750 |
 | $w_{\text{col}}$ | 场景碰撞软代价 | `scene_collision_cfg.weight` | 10000 |
 | $a_{\text{col}}$ | 碰撞激活距离 $\eta$ | `scene_collision_cfg.activation_distance` | 0.03 m |
 | $w_{\text{self}}$ | 自碰撞软代价 | `self_collision_cfg.weight` | 100000 |
-| $w_{\text{rel},p}^{\text{hard}}$ | 协同硬约束 position | `controller.py` | 250000 |
-| $w_{\text{rel},r}^{\text{hard}}$ | 协同硬约束 rotation | `controller.py` | 25000 |
-| $\delta_p$ | 协同位置死区 | `position_tolerance` | 0.005 m |
-| $\delta_r$ | 协同姿态死区 | `orientation_tolerance` | 0.05 rad |
 
 ### 优化器参数
 

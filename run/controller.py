@@ -100,17 +100,15 @@ class DualArmMPCController:
             pass
 
     def _inject_relative_pose_config(self, config) -> None:
-        """注入相对位姿硬约束 (deadzone + continuous penalty).
-
-        tolerance 内: cost=0, grad=0. tolerance 外: 二次惩罚, 梯度可追踪.
-        仅注入 constraint_cfg, 不注入软代价.
+        """回归本质: 简单连续 L2 代价, 无死区, 无分层, 始终可微.
+        LBFGS 擅长二次型, 不需要花活.
         """
         rel_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([250000.0, 25000.0]),
+            weight=torch.tensor([7500.0, 750.0]),
             primary_tool_frame=self.LEFT_TF,
             secondary_tool_frame=self.RIGHT_TF,
-            position_tolerance=0.005,
-            orientation_tolerance=0.05,
+            position_tolerance=0.0,
+            orientation_tolerance=0.0,
         )
         core = config.core_cfg
         for rc in core.optimizer_rollout_configs:
