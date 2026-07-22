@@ -109,7 +109,7 @@ class DualArmMPCController:
             orientation_tolerance=0.05,
         )
         rel_pose_hard_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([75000.0, 7500.0]),
+            weight=torch.tensor([100000.0, 10000.0]),
             primary_tool_frame=self.LEFT_TF,
             secondary_tool_frame=self.RIGHT_TF,
             position_tolerance=0.01,
@@ -299,15 +299,9 @@ class DualArmMPCController:
             self.current_state.velocity = result.action_sequence.velocity[:, -1, :]
             self.current_state.acceleration = result.action_sequence.acceleration[:, -1, :]
 
-            # --- 提取实际碰撞距离 (米, 正=安全, 负=穿透) ---
+            # --- AABB 碰撞距离 (米, 正=间隙, 负=穿透) ---
             min_scene = self._get_min_scene_distance()
             min_self = self._get_min_self_distance()
-            if not hasattr(self, "_dbg_cmp"):
-                self._dbg_cmp = True
-                mpc_v = self._get_mpc_scene_collision_value()
-                print(f"[debug cmp] AABB_min_dist={min_scene*1000:.1f}mm  "
-                      f"MPC_constraint_max={mpc_v:.2f}  "
-                      f"self_col={min_self*1000:.1f}mm")
 
             pos_err = result.position_error
             if pos_err is not None:
@@ -368,9 +362,6 @@ class DualArmMPCController:
         closest = torch.clamp(sc_m.unsqueeze(1), c_min.unsqueeze(0), c_max.unsqueeze(0))
         dist = torch.norm(sc_m.unsqueeze(1) - closest, dim=2)  # [M, K]
         signed = dist - sr.unsqueeze(1)                        # [M, K]
-
-        # 同时查询 MPC 优化器自己的碰撞值 (对比)
-        mpc_col = self._get_mpc_scene_collision_value()
 
         return float(signed.min().item())
 

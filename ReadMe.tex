@@ -28,16 +28,18 @@
 \mathcal{L}(\mathbf{u}) =
 J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + J_{\text{rel}}
 + C_{\text{scene}} + C_{\text{self}} + C_{\text{rel}}
+\label{eq:full}
 \end{equation}
 
 where $N = 16$ is the number of B-spline knots (action horizon),
 $d = 14$ is the total joint DOF (7 per arm).
 $\mathbf{u} = [\mathbf{u}_1, \ldots, \mathbf{u}_N]^\top \in \mathbb{R}^{N \times d}$
-is the sequence of B-spline control points, directly optimized by LBFGS.
+is the sequence of B-spline control points, optimized by LBFGS.
 
-All terms are \textbf{soft costs} (continuous, differentiable) during optimization.
-Collision costs are evaluated as hard binary constraints only in the metrics rollout
-via \texttt{convert\_to\_binary}.
+Each term is structured as \textbf{weight $\times$ normalized error}:
+$\text{term} = w \cdot e(\cdot)$, where $e(\cdot)$ is a differentiable, weight-independent
+scalar measuring a specific type of violation or deviation. This decomposition separates
+tuning (weights) from geometry (error metrics).
 
 \section{Soft Costs}
 
@@ -47,51 +49,67 @@ For each tool frame $f \in \mathcal{F}$, using the \textbf{axis-angle} method
 (\texttt{use\_lie\_group: false}):
 
 \begin{equation}
-J_{\text{pose}} = \sum_{f \in \mathcal{F}} \sum_{k=1}^{N}
-\Bigg[ \frac{w_p}{2} \bigl\lVert \mathbf{W}_p \odot (\mathbf{p}_{k,f} - \mathbf{p}_f^{\text{goal}}) \bigr\rVert^2
-+ w_r \lVert\boldsymbol{\omega}_{k,f}\rVert^2 \Bigg]
+J_{\text{pose}} = w_p \cdot e_{\text{pos}} + w_r \cdot e_{\text{rot}}
+\label{eq:pose}
 \end{equation}
 
-where $\mathbf{W}_p = \operatorname{diag}(\hat{w}_x^p, \hat{w}_y^p, \hat{w}_z^p) \in \mathbb{R}^{3 \times 3}$
-is the per-axis position weight matrix, $\odot$ denotes element-wise multiplication.
-$\boldsymbol{\omega}_{k,f} = \theta_{k,f} \cdot \mathbf{a}_{k,f}$ is the axis-angle
-representation extracted from the relative rotation:
+where the normalized error terms are:
+%
+\begin{align}
+e_{\text{pos}} &= \sum_{f \in \mathcal{F}} \sum_{k=1}^{N}
+\frac{1}{2} \bigl\lVert \mathbf{W}_p \odot (\mathbf{p}_{k,f} - \mathbf{p}_f^{\text{goal}}) \bigr\rVert^2
+\label{eq:epos} \\
+e_{\text{rot}} &= \sum_{f \in \mathcal{F}} \sum_{k=1}^{N}
+\lVert\boldsymbol{\omega}_{k,f}\rVert^2
+\label{eq:erot}
+\end{align}
+
+Here $\mathbf{W}_p = \operatorname{diag}(\hat{w}_x^p, \hat{w}_y^p, \hat{w}_z^p) \in \mathbb{R}^{3 \times 3}$
+is the per-axis position weight matrix (defaults to identity),
+$\boldsymbol{\omega}_{k,f}$ is the axis-angle representation of the relative rotation
+$\mathbf{q}_{k,f} \otimes \bigl(\mathbf{q}_f^{\text{goal}}\bigr)^{-1}$:
 %
 \begin{align*}
 \mathbf{q}_{\Delta} &= \mathbf{q}_{k,f} \otimes \bigl(\mathbf{q}_f^{\text{goal}}\bigr)^{-1} \\
 \mathbf{v} &= \mathbf{W}_r \odot \operatorname{vec}(\mathbf{q}_{\Delta}) \\
 \theta &= 2 \operatorname{arctan2}\bigl(\lVert\mathbf{v}\rVert,\; |w|\bigr) \\
-\mathbf{a} &= \frac{\mathbf{v}}{\lVert\mathbf{v}\rVert}
-	\qquad (\lVert\mathbf{v}\rVert > \varepsilon) \\
-\boldsymbol{\omega}_{k,f} &= \theta \cdot \mathbf{a}
+\boldsymbol{\omega}_{k,f} &= \theta \cdot \frac{\mathbf{v}}{\lVert\mathbf{v}\rVert}
 \end{align*}
 
-Gradient expressions:
+The gradient decomposes multiplicatively:
 %
 \begin{equation}
-\nabla_{\mathbf{p}} J_{\text{pose}} = w_p \cdot \mathbf{W}_p^2 \odot (\mathbf{p} - \mathbf{p}^{\text{goal}}),
+\nabla_{\mathbf{p}} J_{\text{pose}} = w_p \cdot \nabla_{\mathbf{p}} e_{\text{pos}},
 \qquad
-\nabla_{\boldsymbol{\omega}} J_{\text{pose}} = 2 w_r \boldsymbol{\omega}
+\nabla_{\boldsymbol{\omega}} J_{\text{pose}} = w_r \cdot \nabla_{\boldsymbol{\omega}} e_{\text{rot}}
 \end{equation}
+where $\nabla_{\mathbf{p}} e_{\text{pos}} = \mathbf{W}_p^2 \odot (\mathbf{p} - \mathbf{p}^{\text{goal}})$,
+$\nabla_{\boldsymbol{\omega}} e_{\text{rot}} = 2\,\boldsymbol{\omega}$.
 
 \begin{quote}
 \textbf{Note:} When \texttt{use\_lie\_group: true}, the Lie group logarithmic map
-$\log: SO(3) \to \mathfrak{so}(3)$ is used instead, giving equivalent results with
-more accurate Jacobian computation.
+$\log: SO(3) \to \mathfrak{so}(3)$ replaces the axis-angle extraction with
+a proper manifold-aware Jacobian.
 \end{quote}
 
 \subsection{Joint-Space Bound Penalty $J_{\text{bound}}$}
 
-For each joint $d$ and each state quantity
+For each joint $d$ and state quantity
 $s \in \{\text{pos}, \text{vel}, \text{acc}, \text{jerk}, \text{torque}\}$,
-a quadratic penalty is applied when the state exceeds the \textbf{activation-shrunken bounds}:
+a hinge penalty activates when the state exceeds \textbf{activation-shrunken bounds}:
 
 \begin{equation}
-J_{\text{bound}} = \sum_{k=1}^{N} \sum_{d=1}^{d} \sum_{s}
-\frac{w_b^s}{2} \Bigl(
+J_{\text{bound}} = \sum_{s} w_b^s \cdot e_{\text{bound}}^s
+\label{eq:bound}
+\end{equation}
+%
+\begin{equation}
+e_{\text{bound}}^s = \sum_{k=1}^{N} \sum_{d=1}^{d}
+\frac{1}{2} \Bigl(
 \bigl[\max(0,\; x_{k,d}^s - \bar{u}_d^s)\bigr]^2
 + \bigl[\max(0,\; \bar{l}_d^s - x_{k,d}^s)\bigr]^2
 \Bigr)
+\label{eq:ebound}
 \end{equation}
 
 The shrunken bounds are ($\eta^s$ is the activation distance ratio):
@@ -101,40 +119,43 @@ The shrunken bounds are ($\eta^s$ is the activation distance ratio):
 \bar{u}_d^s = u_d^s - \eta^s (u_d^s - l_d^s)
 \end{equation}
 
-Gradient (non-zero only when bounds are violated):
-%
-\begin{equation}
-\nabla_{x} J_{\text{bound}} =
-\begin{cases}
-w_b^s (x - \bar{u}_d^s) & x > \bar{u}_d^s \\
-w_b^s (x - \bar{l}_d^s) & x < \bar{l}_d^s \\
-0 & \text{otherwise}
-\end{cases}
-\end{equation}
-
-\texttt{retime\_weights: false} means weights are not scaled by $dt$.
+The activation distance $\eta^s$ creates a ``warning zone'' inside the hard limits,
+making the cost gradient non-zero before the limit is actually reached. This prevents
+the optimizer from running into the joint limit at full speed.
 
 \subsection{L2 Smoothness Regularization $J_{\text{reg}}$}
 
 Always-active Tikhonov regularization, independent of the bound penalty:
 
 \begin{equation}
-J_{\text{reg}} = \sum_{k=1}^{N} \sum_{d=1}^{d}
-\frac{1}{2} \Bigl[ \lambda_v \dot{q}_{k,d}^2 + \lambda_a \ddot{q}_{k,d}^2 + \lambda_j \dddot{q}_{k,d}^2 \Bigr]
+J_{\text{reg}} = \lambda_v \cdot e_{\text{vel}} + \lambda_a \cdot e_{\text{acc}} + \lambda_j \cdot e_{\text{jerk}}
+\label{eq:reg}
+\end{equation}
+%
+\begin{equation}
+e_{\text{vel}} = \frac{1}{2} \sum_{k=1}^{N} \sum_{d=1}^{d} \dot{q}_{k,d}^2, \quad
+e_{\text{acc}} = \frac{1}{2} \sum_{k=1}^{N} \sum_{d=1}^{d} \ddot{q}_{k,d}^2, \quad
+e_{\text{jerk}} = \frac{1}{2} \sum_{k=1}^{N} \sum_{d=1}^{d} \dddot{q}_{k,d}^2
+\label{eq:ereg}
 \end{equation}
 
-\texttt{retime\_regularization\_weights: true} means weights are scaled by $dt^n$
-(e.g.\ $\lambda_a$ scaled by $dt^2$), making the regularization approximate the
-time integral $\int \lambda_a \lVert\ddot{\mathbf{q}}(t)\rVert^2 dt$ and remain
-consistent across different $dt$ values.
+\texttt{retime\_regularization\_weights: true} means $\lambda$ is scaled by $dt^n$, so
+the discrete sum approximates the continuous-time integral
+$\int \lambda_a \lVert\ddot{\mathbf{q}}(t)\rVert^2 dt$, making the regularization
+invariant to the choice of $dt$.
 
 \subsection{Joint Target Distance $J_{\text{target}}$}
 
-Pulls the trajectory toward the default joint configuration (retract pose),
-with terminal weights much larger than non-terminal:
+Pulls the trajectory toward the default joint configuration, with terminal weighting:
 
 \begin{equation}
-J_{\text{target}} = \sum_{k=1}^{N} \alpha_k \, w_t \sum_{d=1}^{d} (q_{k,d} - q_d^{\text{target}})^2
+J_{\text{target}} = w_t \cdot e_{\text{target}}
+\label{eq:target}
+\end{equation}
+%
+\begin{equation}
+e_{\text{target}} = \sum_{k=1}^{N} \alpha_k \sum_{d=1}^{d} (q_{k,d} - q_d^{\text{target}})^2
+\label{eq:etarget}
 \end{equation}
 %
 \begin{equation}
@@ -144,32 +165,35 @@ J_{\text{target}} = \sum_{k=1}^{N} \alpha_k \, w_t \sum_{d=1}^{d} (q_{k,d} - q_d
 \end{cases}
 \end{equation}
 
-Gradient: $\nabla_{q_{k,d}} J_{\text{target}} = 2 \alpha_k w_t (q_{k,d} - q_d^{\text{target}})$.
+The terminal bias ($\alpha_N = 1$, $\alpha_{k<N} = 0.05$) encodes that reaching the
+goal configuration matters far more than the path taken to get there.
+Gradient: $\nabla_{q_{k,d}} e_{\text{target}} = 2 \alpha_k (q_{k,d} - q_d^{\text{target}})$.
 
-\subsection{Relative Pose Coordination $J_{\text{rel}}$ (runtime toggle)}
+\subsection{Relative Pose Coordination $J_{\text{rel}}$}
 
-Enabled during dual-arm collaborative transport. Constrains the secondary end-effector's
+Enabled at runtime during dual-arm transport. Constrains the secondary end-effector's
 pose relative to the primary:
 
 \begin{equation}
-J_{\text{rel}} = \sum_{k=1}^{N}
-\Bigg[ \frac{w_{\text{rel},p}}{2} \bigl\lVert \Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}} \bigr\rVert^2
-+ w_{\text{rel},r} \bigl\lVert \boldsymbol{\omega}_k^{\text{rel}} \bigr\rVert^2 \Bigg]
+J_{\text{rel}} = w_{\text{rel},p} \cdot e_{\text{rel,pos}} + w_{\text{rel},r} \cdot e_{\text{rel,rot}}
+\label{eq:rel}
+\end{equation}
+%
+\begin{equation}
+e_{\text{rel,pos}} = \sum_{k=1}^{N}
+\frac{1}{2} \bigl\lVert \Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}} \bigr\rVert^2, \qquad
+e_{\text{rel,rot}} = \sum_{k=1}^{N}
+\bigl\lVert \boldsymbol{\omega}_k^{\text{rel}} \bigr\rVert^2
+\label{eq:erel}
 \end{equation}
 
-The relative pose is computed in the primary's local frame ($\mathbf{q}^*$ = quaternion conjugate):
+The relative pose is computed in the primary's local frame ($\mathbf{q}^*$ denotes
+quaternion conjugate):
 %
 \begin{align}
 \Delta\mathbf{p}_k &= \mathbf{q}_{k,\text{primary}}^* \odot \bigl( \mathbf{p}_{k,\text{secondary}} - \mathbf{p}_{k,\text{primary}} \bigr) \\
 \Delta\mathbf{q}_k &= \mathbf{q}_{k,\text{primary}}^* \otimes \mathbf{q}_{k,\text{secondary}}
 \end{align}
-
-Position gradient propagation to world frame:
-%
-\begin{equation}
-\nabla_{\mathbf{p}_1} = -\mathbf{R}(\mathbf{q}_1) \cdot \nabla_{\Delta\mathbf{p}}, \qquad
-\nabla_{\mathbf{p}_2} = \mathbf{R}(\mathbf{q}_1) \cdot \nabla_{\Delta\mathbf{p}}
-\end{equation}
 
 \section{Collision Costs}
 
@@ -179,7 +203,9 @@ For each robot sphere $i$ at each timestep, using a \textbf{smooth activation fu
 ($C^1$-continuous, quadratic-linear transition):
 
 \begin{equation}
-C_{\text{scene}} = w_{\text{col}} \sum_{k=1}^{N} \sum_{i=1}^{N_s} f_{\eta}\!\bigl(d_{k,i}^{\text{pen}}\bigr)
+C_{\text{scene}} = w_{\text{col}} \cdot e_{\text{scene}}, \qquad
+e_{\text{scene}} = \sum_{k=1}^{N} \sum_{i=1}^{N_s} f_{\eta}\!\bigl(d_{k,i}^{\text{pen}}\bigr)
+\label{eq:scene}
 \end{equation}
 
 The penetration depth is
@@ -196,82 +222,94 @@ d - \dfrac{\eta}{2}      & d > \eta \quad \text{(linear region)}
 \end{equation}
 
 The function is $C^1$-continuous at $d = 0$ and $d = \eta$:
-%
-\begin{equation}
-f_{\eta}(0) = 0,\; f_{\eta}'(0) = 0; \qquad
-f_{\eta}(\eta) = \frac{\eta}{2},\; f_{\eta}'(\eta) = 1
-\end{equation}
+$f_{\eta}(0) = 0$, $f_{\eta}'(0) = 0$;
+$f_{\eta}(\eta) = \eta/2$, $f_{\eta}'(\eta) = 1$.
 
-Gradient:
-$d \le 0 \Rightarrow 0$;
-$0 < d \le \eta \Rightarrow d / \eta$;
-$d > \eta \Rightarrow 1$.
+The $C^1$ continuity is essential: $f_{\eta}'(0) = 0$ ensures the gradient vanishes
+smoothly at the activation boundary, preventing discontinuous jumps in the gradient
+field that would destabilize LBFGS. The quadratic-to-linear transition ($f_{\eta}'(0)=0$,
+$f_{\eta}'(\eta)=1$) provides a ``soft landing'': near obstacles the cost rises quadratically
+(gentle push), then transitions to linear (constant-strength push) when penetration is severe.
 
 Sweep mode (\texttt{use\_sweep: true}, \texttt{use\_speed\_metric: true}) additionally
-accounts for sphere velocity over $dt$, dynamically scaling the activation distance to
-compensate for the blind spot between discrete timesteps.
+accounts for sphere velocity over $dt$ to compensate for the temporal discretization
+gap between consecutive timesteps.
 
 \subsection{Self-Collision Cost $C_{\text{self}}$}
 
-For all predefined sphere pairs $(i,j)$, using a squared distance-difference penalty
-on the maximally penetrating pair:
+For all predefined sphere pairs $(i,j)$, penalizes the maximally penetrating pair:
 
 \begin{equation}
-C_{\text{self}} = w_{\text{self}} \sum_{k=1}^{N}
+C_{\text{self}} = w_{\text{self}} \cdot e_{\text{self}}, \qquad
+e_{\text{self}} = \sum_{k=1}^{N}
 \max_{(i,j)} \Bigl[ \frac{1}{2} \bigl[ \max\bigl(0,\;
 (r_i + r_j + \delta_{ij})^2 - \lVert\mathbf{c}_{k,i} - \mathbf{c}_{k,j}\rVert^2 \bigr) \bigr] \Bigr]
+\label{eq:self}
 \end{equation}
 
-where $\delta_{ij}$ is the pair-specific padding.
-Gradient (sparse, computed only for the max-penetration pair):
+where $\delta_{ij}$ is pair-specific padding. The $\max_{(i,j)}$ operator selects only
+the worst collision pair per timestep, producing a \textbf{sparse gradient}:
 %
 \begin{equation}
-\nabla_{\mathbf{c}_i} C_{\text{self}} = -w_{\text{self}} (\mathbf{c}_i - \mathbf{c}_j), \qquad
-\nabla_{\mathbf{c}_j} C_{\text{self}} = w_{\text{self}} (\mathbf{c}_i - \mathbf{c}_j)
+\nabla_{\mathbf{c}_i} e_{\text{self}} = -(\mathbf{c}_i - \mathbf{c}_j), \qquad
+\nabla_{\mathbf{c}_j} e_{\text{self}} = (\mathbf{c}_i - \mathbf{c}_j)
 \end{equation}
+computed only for the maximally penetrating pair.
 
-\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$ (runtime toggle)}
+\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$}
 
-Uses \texttt{convert\_to\_binary: True} to turn the relative pose cost into a binary
-constraint with tolerances $\delta_p, \delta_r$:
+Uses \texttt{convert\_to\_binary: True} to produce a feasibility indicator
+with tolerances $\delta_p, \delta_r$:
 
 \begin{equation}
-C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N}
-\Bigl[ \max\bigl(0,\; \lVert\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\rVert - \delta_p\bigr)
-+ \max\bigl(0,\; \theta_k^{\text{rel}} - \delta_r\bigr) \Bigr]
+C_{\text{rel}} = w_{\text{rel},p}^{\text{hard}} \cdot e_{\text{rel,pos}}^{\text{hard}}
++ w_{\text{rel},r}^{\text{hard}} \cdot e_{\text{rel,rot}}^{\text{hard}}
+\label{eq:crel}
 \end{equation}
+%
+\begin{equation}
+e_{\text{rel,pos}}^{\text{hard}} = \sum_{k=1}^{N}
+\mathbb{I}\bigl( \lVert\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\rVert > \delta_p \bigr), \qquad
+e_{\text{rel,rot}}^{\text{hard}} = \sum_{k=1}^{N}
+\mathbb{I}\bigl( \theta_k^{\text{rel}} > \delta_r \bigr)
+\label{eq:crel_error}
+\end{equation}
+
+where $\mathbb{I}(\cdot)$ denotes the indicator function (1 if condition holds, 0 otherwise).
+In practice, the binary hard constraint is evaluated post-optimization for feasibility
+certification, while the soft version $J_{\text{rel}}$ drives the gradient-based search.
 
 \section{Weight Tables}
 
 \begin{table}[h]
 \centering
-\caption{MPC cost weights}
+\caption{MPC cost weights. Each weight multiplies its corresponding normalized error term.}
 \label{tab:weights}
 \begin{tabular}{@{}lllr@{}}
 \toprule
 Symbol & Meaning & Source Config & Value \\
 \midrule
-$w_p$                & End-effector position tracking  & \texttt{tool\_pose\_cfg.weight[0]}          & 50000  \\
-$w_r$                & End-effector rotation tracking  & \texttt{tool\_pose\_cfg.weight[1]}          & 200    \\
-$w_b^{\text{pos}}$   & Joint position bound penalty    & \texttt{cspace\_cfg.weight[0]}              & 1000   \\
-$w_b^{\text{vel}}$   & Joint velocity bound penalty    & \texttt{cspace\_cfg.weight[1]}              & 1000   \\
-$w_b^{\text{acc}}$   & Joint acceleration bound penalty& \texttt{cspace\_cfg.weight[2]}              & 1000   \\
-$w_b^{\text{jerk}}$  & Joint jerk bound penalty        & \texttt{cspace\_cfg.weight[3]}              & 100    \\
-$\lambda_v$          & Velocity L2 regularization      & \texttt{squared\_l2\_reg\_weight[0]}        & 0.01   \\
-$\lambda_a$          & Acceleration L2 regularization  & \texttt{squared\_l2\_reg\_weight[1]}        & 10000  \\
-$\lambda_j$          & Jerk L2 regularization          & \texttt{squared\_l2\_reg\_weight[2]}        & 10     \\
-$\eta^s$             & Bound activation distance (all 5 dims) & \texttt{activation\_distance[*]}       & 0.01   \\
-$w_t$                & Joint target distance           & \texttt{cspace\_target\_weight}             & 1000   \\
-$\alpha_N$ / $\alpha_{<N}$ & Terminal / non-terminal factor & \texttt{cspace\_non\_terminal\_weight\_factor} & 1 / 0.05 \\
-$w_{\text{rel},p}$   & Coordination soft position      & \texttt{controller.py} (RelativePoseCostCfg) & 7500   \\
-$w_{\text{rel},r}$   & Coordination soft rotation      & \texttt{controller.py} (RelativePoseCostCfg) & 750    \\
-$w_{\text{col}}$     & Scene collision soft cost       & \texttt{scene\_collision\_cfg.weight}       & 10000  \\
-$\eta$               & Collision activation distance   & \texttt{scene\_collision\_cfg.activation\_distance} & 0.03 m \\
-$w_{\text{self}}$    & Self-collision soft cost        & \texttt{self\_collision\_cfg.weight}        & 100000 \\
-$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard position & \texttt{controller.py} (binary)      & 75000 \\
-$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rotation & \texttt{controller.py} (binary)      & 7500  \\
-$\delta_p$           & Coordination position tolerance & \texttt{position\_tolerance}                 & 0.01 m \\
-$\delta_r$           & Coordination rotation tolerance & \texttt{orientation\_tolerance}              & 0.05 rad \\
+$w_p$                & Position tracking           & \texttt{tool\_pose\_cfg.weight[0]}          & 50000  \\
+$w_r$                & Rotation tracking           & \texttt{tool\_pose\_cfg.weight[1]}          & 200    \\
+$w_b^{\text{pos}}$   & Position bound penalty      & \texttt{cspace\_cfg.weight[0]}              & 1000   \\
+$w_b^{\text{vel}}$   & Velocity bound penalty      & \texttt{cspace\_cfg.weight[1]}              & 1000   \\
+$w_b^{\text{acc}}$   & Acceleration bound penalty  & \texttt{cspace\_cfg.weight[2]}              & 1000   \\
+$w_b^{\text{jerk}}$  & Jerk bound penalty          & \texttt{cspace\_cfg.weight[3]}              & 100    \\
+$\lambda_v$          & Velocity L2 regularization  & \texttt{squared\_l2\_reg\_weight[0]}        & 0.01   \\
+$\lambda_a$          & Acceleration L2 regulariz.  & \texttt{squared\_l2\_reg\_weight[1]}        & 10000  \\
+$\lambda_j$          & Jerk L2 regularization      & \texttt{squared\_l2\_reg\_weight[2]}        & 10     \\
+$\eta^s$             & Bound activation (5 dims)   & \texttt{activation\_distance[*]}             & 0.01   \\
+$w_t$                & Joint target distance       & \texttt{cspace\_target\_weight}             & 1000   \\
+$\alpha_N$ / $\alpha_{<N}$ & Terminal / non-term.    & \texttt{cspace\_non\_terminal\_weight\_factor} & 1 / 0.05 \\
+$w_{\text{rel},p}$   & Coordination soft position  & \texttt{controller.py} (RelativePoseCostCfg) & 7500   \\
+$w_{\text{rel},r}$   & Coordination soft rotation  & \texttt{controller.py} (RelativePoseCostCfg) & 750    \\
+$w_{\text{col}}$     & Scene collision soft        & \texttt{scene\_collision\_cfg.weight}       & 10000  \\
+$\eta$               & Collision activation dist.  & \texttt{scene\_collision\_cfg.activation\_distance} & 0.03 m \\
+$w_{\text{self}}$    & Self-collision soft         & \texttt{self\_collision\_cfg.weight}        & 100000 \\
+$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard pos  & \texttt{controller.py} (binary)             & 100000 \\
+$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rot  & \texttt{controller.py} (binary)             & 10000 \\
+$\delta_p$           & Coordination pos. tolerance & \texttt{position\_tolerance}                 & 0.01 m \\
+$\delta_r$           & Coordination rot. tolerance & \texttt{orientation\_tolerance}              & 0.05 rad \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -287,7 +325,7 @@ $\delta_r$           & Coordination rotation tolerance & \texttt{orientation\_to
 Parameter & Meaning & Value \\
 \midrule
 $N$                & B-spline knots (\texttt{n\_knots})       & 16       \\
-$\Delta t$         & Optimization timestep (\texttt{optimization\_dt}) & 0.025 s  \\
+$\Delta t$         & Optimization timestep                     & 0.025 s  \\
 $T$                & Prediction horizon ($N \cdot \Delta t$)   & 0.4 s    \\
 \texttt{num\_iters}& LBFGS outer iterations                   & 40       \\
 \texttt{inner\_iters} & LBFGS inner iterations                 & 20       \\
