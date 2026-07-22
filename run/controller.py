@@ -109,7 +109,7 @@ class DualArmMPCController:
             orientation_tolerance=0.05,
         )
         rel_pose_hard_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([100000.0, 10000.0]),
+            weight=torch.tensor([75000.0, 7500.0]),
             primary_tool_frame=self.LEFT_TF,
             secondary_tool_frame=self.RIGHT_TF,
             position_tolerance=0.01,

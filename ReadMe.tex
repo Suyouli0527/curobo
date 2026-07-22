@@ -169,9 +169,9 @@ The terminal bias ($\alpha_N = 1$, $\alpha_{k<N} = 0.05$) encodes that reaching 
 goal configuration matters far more than the path taken to get there.
 Gradient: $\nabla_{q_{k,d}} e_{\text{target}} = 2 \alpha_k (q_{k,d} - q_d^{\text{target}})$.
 
-\subsection{Relative Pose Coordination $J_{\text{rel}}$}
+\subsection{Relative Pose Coordination $J_{\text{rel}}$ (runtime toggle)}
 
-Enabled at runtime during dual-arm transport. Constrains the secondary end-effector's
+Enabled during dual-arm collaborative transport. Constrains the secondary end-effector's
 pose relative to the primary:
 
 \begin{equation}
@@ -256,7 +256,7 @@ the worst collision pair per timestep, producing a \textbf{sparse gradient}:
 \end{equation}
 computed only for the maximally penetrating pair.
 
-\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$}
+\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$ (runtime toggle)}
 
 Uses \texttt{convert\_to\_binary: True} to produce a feasibility indicator
 with tolerances $\delta_p, \delta_r$:
@@ -276,8 +276,6 @@ e_{\text{rel,rot}}^{\text{hard}} = \sum_{k=1}^{N}
 \end{equation}
 
 where $\mathbb{I}(\cdot)$ denotes the indicator function (1 if condition holds, 0 otherwise).
-In practice, the binary hard constraint is evaluated post-optimization for feasibility
-certification, while the soft version $J_{\text{rel}}$ drives the gradient-based search.
 
 \section{Weight Tables}
 
@@ -306,8 +304,8 @@ $w_{\text{rel},r}$   & Coordination soft rotation  & \texttt{controller.py} (Rel
 $w_{\text{col}}$     & Scene collision soft        & \texttt{scene\_collision\_cfg.weight}       & 10000  \\
 $\eta$               & Collision activation dist.  & \texttt{scene\_collision\_cfg.activation\_distance} & 0.03 m \\
 $w_{\text{self}}$    & Self-collision soft         & \texttt{self\_collision\_cfg.weight}        & 100000 \\
-$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard pos  & \texttt{controller.py} (binary)             & 100000 \\
-$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rot  & \texttt{controller.py} (binary)             & 10000 \\
+$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard pos  & \texttt{controller.py} (binary)             & 75000 \\
+$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rot  & \texttt{controller.py} (binary)             & 7500  \\
 $\delta_p$           & Coordination pos. tolerance & \texttt{position\_tolerance}                 & 0.01 m \\
 $\delta_r$           & Coordination rot. tolerance & \texttt{orientation\_tolerance}              & 0.05 rad \\
 \bottomrule

@@ -6,33 +6,19 @@
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| `collision_sphere_buffer` | 0.0 | 全局默认 buffer，被 per-link 值覆盖 |
+| `collision_sphere_buffer` | 0.03 | 全局统一 buffer，对齐学长 XACRO `safety_distance=0.03` |
 
 ## 自碰撞 Buffer (`self_collision_buffer`)
 
 加到每个 sphere 半径上的额外 padding。单位: 米。
 
 ```
-base (link0):     ██████████ 0.10
-shoulder (link1): █████     0.05
-hand:             ██        0.02
-leftfinger:       █         0.01
-rightfinger:      █         0.01
-link2~7:                   0.00
-wrist_camera:              0.00
-attached_object:           0.00
+所有 link:                 0.00  (全局 collision_sphere_buffer=0.03 统一提供)
 ```
 
-| Link | Buffer (m) | 设计原因 |
-|------|-----------|---------|
-| `link0` (base) | 0.10 | 靠近工作台，双臂共享底座区域，最大提前预警 |
-| `link1` (shoulder) | 0.05 | 处于双臂交叉区 |
-| `link2` ~ `link7` (arm links) | 0.00 | 杆状结构，球间天然有间隙 |
-| `hand` | 0.02 | 末端手掌，防夹手 |
-| `leftfinger` | 0.01 | 指间缝隙精细操作 |
-| `rightfinger` | 0.01 | 指间缝隙精细操作 |
-| `wrist_camera` | 0.00 | 相机不参与主动碰撞检测 |
-| `attached_object` | 0.00 | 抓取物体不加额外 buffer |
+| Link | Buffer (m) | 有效总 padding (含全局 0.03) |
+|------|-----------|------|
+| 全部 link | 0.00 | 0.03 |
 
 ### 自碰撞代价中的使用
 
@@ -43,6 +29,15 @@ $$f_{\text{diff}} = (r_i + b_i + r_j + b_j)^2 - \|\mathbf{c}_i - \mathbf{c}_j\|^
 若 $f_{\text{diff}} > 0$，代价 $\displaystyle C = w_{\text{self}} \cdot \frac{1}{2} \cdot f_{\text{diff}}$。
 
 buffer $b$ 使某些 link 在检测中"变胖"，提前预警而非等真正穿透。
+
+## 与学长模型的对齐
+
+| 学长的 XACRO | 我们的 YAML | 说明 |
+|---|---|---|
+| `safety_distance=0.03` | `collision_sphere_buffer: 0.03` | 全局统一加在所有 sphere 半径上 |
+| 无 per-link buffer | `self_collision_buffer: {link0: 0.02, link1: 0.02}` | 仅底座和肩部保留额外缓冲 |
+
+有效碰撞半径 = `sphere_radius + 0.03(global) + self_collision_buffer[link]`
 
 ## 场景碰撞激活距离
 
