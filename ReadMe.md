@@ -64,7 +64,7 @@ run/
 
 ### 优化问题
 
-$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + C_{\text{scene}} + C_{\text{self}} + C_{\text{rel}}$$
+$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + C_{\text{scene}} + C_{\text{self}} + J_{\text{rel}}$$
 
 其中 $N=16$ 为 B-spline knot 数 (action horizon)，$d=14$ 为关节自由度 (双臂各 7 DoF)。
 
@@ -143,11 +143,11 @@ $$\alpha_k = \begin{cases} 1.0 & k = N \text{ (terminal knot)} \\ 0.05 & k < N \
 
 ---
 
-### 5. 相对位姿硬约束 $C_{\text{rel}}$（运行时可选，hinge + deadzone）
+### 5. 相对位姿硬约束 $J_{\text{rel}}$（运行时可选，hinge + deadzone）
 
 偏差在死区 $\delta_p, \delta_r$ 内时约束不激活（cost=0, grad=0）。超出死区后连续二次惩罚，高权重保证约束效果，梯度可追踪。
 
-$$C_{\text{rel}} = \sum_{k=1}^{N} \Big[ w_{\text{rel},p}^{\text{hard}} \cdot \bigl[\max(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p)\bigr]^2 + w_{\text{rel},r}^{\text{hard}} \cdot \bigl[\max(0,\; \theta_k^{\text{rel}} - \delta_r)\bigr]^2 \Big]$$
+$$J_{\text{rel}} = \sum_{k=1}^{N} \Big[ w_{\text{rel},p}^{\text{hard}} \cdot \bigl[\max(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p)\bigr]^2 + w_{\text{rel},r}^{\text{hard}} \cdot \bigl[\max(0,\; \theta_k^{\text{rel}} - \delta_r)\bigr]^2 \Big]$$
 
 其中相对位姿在 primary 局部坐标系中计算：
 $$\Delta\mathbf{p}_k = \mathbf{q}_{k,\text{primary}}^* \odot (\mathbf{p}_{k,\text{secondary}} - \mathbf{p}_{k,\text{primary}})$$
@@ -155,7 +155,7 @@ $$\Delta\mathbf{q}_k = \mathbf{q}_{k,\text{primary}}^* \otimes \mathbf{q}_{k,\te
 
 ---
 
-### 6. 场景碰撞代价 $C_{\text{scene}}$ $C_{\text{scene}}$
+### 6. 场景碰撞代价 $C_{\text{scene}}$
 
 对每个 robot sphere $i$ 在每个时间步，使用 **平滑激活函数**（C¹ 连续，quadratic-linear transition）：
 

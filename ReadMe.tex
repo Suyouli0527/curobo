@@ -27,7 +27,7 @@
 \min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \;
 \mathcal{L}(\mathbf{u}) =
 J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}}
-+ C_{\text{scene}} + C_{\text{self}} + C_{\text{rel}}
++ C_{\text{scene}} + C_{\text{self}} + J_{\text{rel}}
 \label{eq:full}
 \end{equation}
 
@@ -169,7 +169,7 @@ The terminal bias ($\alpha_N = 1$, $\alpha_{k<N} = 0.05$) encodes that reaching 
 goal configuration matters far more than the path taken to get there.
 Gradient: $\nabla_{q_{k,d}} e_{\text{target}} = 2 \alpha_k (q_{k,d} - q_d^{\text{target}})$.
 
-\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$ (runtime toggle)}
+\subsection{Relative Pose Hard Constraint $J_{\text{rel}}$ (runtime toggle)}
 
 Formulated as a \textbf{hinge loss with deadzone}: within tolerance $\delta_p, \delta_r$
 the constraint is inactive (cost $=0$, gradient $=0$), allowing LBFGS to focus on
@@ -177,7 +177,7 @@ collision avoidance. Beyond tolerance, a continuous quadratic penalty with high 
 provides gradient direction for recovery.
 
 \begin{equation}
-C_{\text{rel}} = w_{\text{rel},p}^{\text{hard}} \cdot e_{\text{rel,pos}}^{\text{hard}}
+J_{\text{rel}} = w_{\text{rel},p}^{\text{hard}} \cdot e_{\text{rel,pos}}^{\text{hard}}
 + w_{\text{rel},r}^{\text{hard}} \cdot e_{\text{rel,rot}}^{\text{hard}}
 \label{eq:crel}
 \end{equation}
