@@ -5,7 +5,7 @@ robot_cfg:
     asset_root_path: robot/franka_description
     base_link: world_base_link
     collision_link_names: [panda_right_link0, panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger, attached_object_right, panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger, attached_object_left]
-    collision_sphere_buffer: 0.03   # 对齐学长 safety_distance=0.03
+    collision_sphere_buffer: 0.0
     cspace:
       cspace_distance_weight: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
       joint_names: [panda_right_joint1, panda_right_joint2, panda_right_joint3, panda_right_joint4, panda_right_joint5, panda_right_joint6, panda_right_joint7, panda_right_finger_joint1, panda_right_finger_joint2, panda_left_joint1, panda_left_joint2, panda_left_joint3, panda_left_joint4, panda_left_joint5, panda_left_joint6, panda_left_joint7, panda_left_finger_joint1, panda_left_finger_joint2]
@@ -39,14 +39,14 @@ robot_cfg:
     self_collision_buffer:
       attached_object_right: 0.0
       attached_object_left: 0.0
-      panda_right_hand: 0.0            # 全局 +0.03 已覆盖
-      panda_left_hand: 0.0
-      panda_right_leftfinger: 0.0
-      panda_left_leftfinger: 0.0
-      panda_right_link0: 0.0           # 对齐学长, 仅靠全局 0.03
-      panda_left_link0: 0.0
-      panda_right_link1: 0.0           # 对齐学长, 仅靠全局 0.03
-      panda_left_link1: 0.0
+      panda_right_hand: 0.02
+      panda_left_hand: 0.02
+      panda_right_leftfinger: 0.01
+      panda_left_leftfinger: 0.01
+      panda_right_link0: 0.1
+      panda_left_link0: 0.1
+      panda_right_link1: 0.05
+      panda_left_link1: 0.05
       panda_right_link2: 0.0
       panda_left_link2: 0.0
       panda_right_link3: 0.0
@@ -59,49 +59,48 @@ robot_cfg:
       panda_left_link6: 0.0
       panda_right_link7: 0.0
       panda_left_link7: 0.0
-      panda_right_rightfinger: 0.0
-      panda_left_rightfinger: 0.0
+      panda_right_rightfinger: 0.01
+      panda_left_rightfinger: 0.01
       panda_right_wrist_camera: 0.0
       panda_left_wrist_camera: 0.0
     self_collision_ignore:
-      # === 底座 ===
       panda_right_base_link: [world_base_link, panda_right_link0]
       world_base_link: [panda_right_base_link, panda_left_base_link]
-      panda_left_base_link: [world_base_link, panda_left_link0]
-
-      # === 右臂 (对齐学长 SRDF: dual_panda_arm + dual_panda_arm_hand + dual_hand) ===
-      panda_right_link0: [panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3]
-      panda_right_link1: [panda_right_link2, panda_right_link3, panda_right_link4, panda_left_link1, panda_left_link2, panda_left_link4]
-      panda_right_link2: [panda_right_link3, panda_right_link4, panda_right_link6, panda_left_link2, panda_left_link3]
-      panda_right_link3: [panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_left_link3]
-      panda_right_link4: [panda_right_link5, panda_right_link6, panda_right_link7]
-      panda_right_link5: [panda_right_link6]
-      panda_right_link6: [panda_right_link7]
-      panda_right_link7: []
+      panda_right_link0: [panda_right_base_link, panda_right_link1, panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_right_link2, panda_right_link3]
+      panda_right_link1: [panda_right_link0, panda_right_link2, panda_left_link1, panda_left_link2, panda_left_link4, panda_right_link3, panda_right_link4]
+      panda_right_link2: [panda_right_link1, panda_right_link3, panda_left_link2, panda_left_link3, panda_right_link4]
+      panda_right_link3: [panda_right_link2, panda_right_link4, panda_left_link3, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand]
+      panda_right_link4: [panda_right_link3, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand]
+      panda_right_link5: [panda_right_link4, panda_right_link6]
+      panda_right_link6: [panda_right_link5, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger]
+      panda_right_link7: [panda_right_link6, panda_right_link8, panda_right_gripper, panda_right_hand, panda_right_wrist_camera, panda_right_leftfinger, panda_right_rightfinger]
       panda_right_link8: [panda_right_link7, panda_right_wrist_camera]
-      panda_right_wrist_camera: [panda_right_link8, panda_right_link6, panda_right_hand]
-      panda_right_hand: [panda_right_wrist_camera, panda_right_link3, panda_right_link4, panda_right_link6, panda_right_leftfinger, panda_right_rightfinger]
-      panda_right_leftfinger: [panda_right_hand, panda_right_rightfinger, panda_right_link3, panda_right_link4, panda_right_link6, panda_right_link7, panda_right_wrist_camera]
-      panda_right_rightfinger: [panda_right_hand, panda_right_leftfinger, panda_right_link3, panda_right_link4, panda_right_link6, panda_right_link7, panda_right_wrist_camera]
-
-      # === 左臂 (对称) ===
-      panda_left_link0: [panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_right_link1, panda_right_link2, panda_right_link3]
-      panda_left_link1: [panda_left_link2, panda_left_link3, panda_left_link4, panda_right_link2, panda_right_link4]
-      panda_left_link2: [panda_left_link3, panda_left_link4, panda_left_link6, panda_right_link3]
-      panda_left_link3: [panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7]
-      panda_left_link4: [panda_left_link5, panda_left_link6, panda_left_link7]
-      panda_left_link5: [panda_left_link6]
-      panda_left_link6: [panda_left_link7]
-      panda_left_link7: []
+      panda_right_wrist_camera: [panda_right_link8, panda_right_hand]
+      panda_right_hand: [panda_right_wrist_camera, panda_right_hand_tcp, panda_right_leftfinger, panda_right_rightfinger, panda_right_ee_link]
+      panda_right_hand_tcp: [panda_right_hand]
+      panda_right_leftfinger: [panda_right_hand, panda_right_wrist_camera]
+      panda_right_rightfinger: [panda_right_hand, panda_right_wrist_camera]
+      panda_right_ee_link: [panda_right_hand]
+      panda_right_gripper: [panda_right_link7]
+      panda_left_base_link: [world_base_link, panda_left_link0]
+      panda_left_link0: [panda_left_base_link, panda_left_link1, panda_right_link1, panda_left_link2, panda_left_link3, panda_right_link2, panda_right_link3]
+      panda_left_link1: [panda_left_link0, panda_left_link2, panda_right_link2, panda_left_link3, panda_left_link4, panda_right_link4]
+      panda_left_link2: [panda_left_link1, panda_left_link3, panda_right_link3, panda_left_link4]
+      panda_left_link3: [panda_left_link2, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand]
+      panda_left_link4: [panda_left_link3, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand]
+      panda_left_link5: [panda_left_link4, panda_left_link6]
+      panda_left_link6: [panda_left_link5, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger]
+      panda_left_link7: [panda_left_link6, panda_left_link8, panda_left_gripper, panda_left_hand, panda_left_wrist_camera, panda_left_leftfinger, panda_left_rightfinger]
       panda_left_link8: [panda_left_link7, panda_left_wrist_camera]
-      panda_left_wrist_camera: [panda_left_link8, panda_left_link6, panda_left_hand]
-      panda_left_hand: [panda_left_wrist_camera, panda_left_link3, panda_left_link4, panda_left_link6, panda_left_leftfinger, panda_left_rightfinger]
-      panda_left_leftfinger: [panda_left_hand, panda_left_rightfinger, panda_left_link3, panda_left_link4, panda_left_link6, panda_left_link7, panda_left_wrist_camera]
-      panda_left_rightfinger: [panda_left_hand, panda_left_leftfinger, panda_left_link3, panda_left_link4, panda_left_link6, panda_left_link7, panda_left_wrist_camera]
-
-      # === 运行时附着 ===
-      attached_object_right: []
-      attached_object_left: []
+      panda_left_wrist_camera: [panda_left_link8, panda_left_hand]
+      panda_left_hand: [panda_left_wrist_camera, panda_left_hand_tcp, panda_left_leftfinger, panda_left_rightfinger, panda_left_ee_link]
+      panda_left_hand_tcp: [panda_left_hand]
+      panda_left_leftfinger: [panda_left_hand, panda_left_wrist_camera]
+      panda_left_rightfinger: [panda_left_hand, panda_left_wrist_camera]
+      panda_left_ee_link: [panda_left_hand]
+      panda_left_gripper: [panda_left_link7]
+      attached_object_right: [panda_right_link0, panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger, panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger, attached_object_left]
+      attached_object_left: [panda_left_link0, panda_left_link1, panda_left_link2, panda_left_link3, panda_left_link4, panda_left_link5, panda_left_link6, panda_left_link7, panda_left_wrist_camera, panda_left_hand, panda_left_leftfinger, panda_left_rightfinger, panda_right_link0, panda_right_link1, panda_right_link2, panda_right_link3, panda_right_link4, panda_right_link5, panda_right_link6, panda_right_link7, panda_right_wrist_camera, panda_right_hand, panda_right_leftfinger, panda_right_rightfinger, attached_object_right]
     urdf_path: robot/franka_description/dual_franka_with_camera.urdf
     use_global_cumul: true
     collision_spheres:

@@ -64,7 +64,7 @@ run/
 
 ### 优化问题
 
-$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + J_{\text{rel}} + C_{\text{scene}} + C_{\text{self}} + C_{\text{rel}}$$
+$$\min_{\mathbf{u} \in \mathbb{R}^{N \times d}} \quad \mathcal{L}(\mathbf{u}) = J_{\text{pose}} + J_{\text{bound}} + J_{\text{reg}} + J_{\text{target}} + C_{\text{scene}} + C_{\text{self}} + C_{\text{rel}}$$
 
 其中 $N=16$ 为 B-spline knot 数 (action horizon)，$d=14$ 为关节自由度 (双臂各 7 DoF)。
 
@@ -143,21 +143,19 @@ $$\alpha_k = \begin{cases} 1.0 & k = N \text{ (terminal knot)} \\ 0.05 & k < N \
 
 ---
 
-### 5. 相对位姿协同 $J_{\text{rel}}$（运行时可选）
+### 5. 相对位姿硬约束 $C_{\text{rel}}$（运行时可选，hinge + deadzone）
 
-双臂协同搬运时启用，约束 secondary 末端相对于 primary 末端的位姿：
+偏差在死区 $\delta_p, \delta_r$ 内时约束不激活（cost=0, grad=0）。超出死区后连续二次惩罚，高权重保证约束效果，梯度可追踪。
 
-$$J_{\text{rel}} = \sum_{k=1}^{N} \left[ \frac{w_{\text{rel},p}}{2} \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\|^2 + w_{\text{rel},r} \|\boldsymbol{\omega}_k^{\text{rel}}\|^2 \right]$$
+$$C_{\text{rel}} = \sum_{k=1}^{N} \Big[ w_{\text{rel},p}^{\text{hard}} \cdot \bigl[\max(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p)\bigr]^2 + w_{\text{rel},r}^{\text{hard}} \cdot \bigl[\max(0,\; \theta_k^{\text{rel}} - \delta_r)\bigr]^2 \Big]$$
 
 其中相对位姿在 primary 局部坐标系中计算：
 $$\Delta\mathbf{p}_k = \mathbf{q}_{k,\text{primary}}^* \odot (\mathbf{p}_{k,\text{secondary}} - \mathbf{p}_{k,\text{primary}})$$
 $$\Delta\mathbf{q}_k = \mathbf{q}_{k,\text{primary}}^* \otimes \mathbf{q}_{k,\text{secondary}}$$
 
-位置梯度传播至世界坐标系：$\nabla_{\mathbf{p}_1} = -\mathbf{R}(\mathbf{q}_1) \cdot \nabla_{\Delta\mathbf{p}}$，$\nabla_{\mathbf{p}_2} = \mathbf{R}(\mathbf{q}_1) \cdot \nabla_{\Delta\mathbf{p}}$。
-
 ---
 
-### 6. 场景碰撞代价 $C_{\text{scene}}$
+### 6. 场景碰撞代价 $C_{\text{scene}}$ $C_{\text{scene}}$
 
 对每个 robot sphere $i$ 在每个时间步，使用 **平滑激活函数**（C¹ 连续，quadratic-linear transition）：
 
@@ -192,14 +190,6 @@ $$\nabla_{\mathbf{c}_i} = -w_{\text{self}} (\mathbf{c}_i - \mathbf{c}_j), \quad 
 
 ---
 
-### 8. 相对位姿硬约束 $C_{\text{rel}}$（运行时可选）
-
-通过 `convert_to_binary: True` 将相对位姿代价转为二值约束，带容差 $\delta_p, \delta_r$：
-
-$$C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N} \Big[ \max\bigl(0,\; \|\Delta\mathbf{p}_k - \Delta\mathbf{p}^{\text{target}}\| - \delta_p\bigr) + \max\bigl(0,\; \theta_k^{\text{rel}} - \delta_r\bigr) \Big]$$
-
----
-
 ### 权重总表
 
 | 符号 | 含义 | 源 YAML / 代码 | 值 |
@@ -216,15 +206,13 @@ $$C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N} \Big[ \max\bigl(0
 | $\eta^s$ | Bound 激活距离（全部 5 维） | `activation_distance[*]` | 0.01 |
 | $w_t$ | 关节目标距离 | `cspace_target_weight` | 1000 |
 | $\alpha_k$ | 终端权重因子 | `cspace_non_terminal_weight_factor` | 1 (term), 0.05 (non-term) |
-| $w_{\text{rel},p}$ | 协同软约束 position | `controller.py:_inject_relative_pose_config` | 7500 |
-| $w_{\text{rel},r}$ | 协同软约束 rotation | `controller.py:_inject_relative_pose_config` | 750 |
 | $w_{\text{col}}$ | 场景碰撞软代价 | `scene_collision_cfg.weight` | 10000 |
 | $a_{\text{col}}$ | 碰撞激活距离 $\eta$ | `scene_collision_cfg.activation_distance` | 0.03 m |
 | $w_{\text{self}}$ | 自碰撞软代价 | `self_collision_cfg.weight` | 100000 |
-| $w_{\text{rel},p}^{\text{hard}}$ | 协同硬约束 position | `controller.py:_inject_relative_pose_config` | 75000 |
-| $w_{\text{rel},r}^{\text{hard}}$ | 协同硬约束 rotation | `controller.py:_inject_relative_pose_config` | 7500 |
-| $\delta_p$ | 协同位置容差 | `position_tolerance` | 0.01 m |
-| $\delta_r$ | 协同姿态容差 | `orientation_tolerance` | 0.05 rad |
+| $w_{\text{rel},p}^{\text{hard}}$ | 协同硬约束 position | `controller.py` | 250000 |
+| $w_{\text{rel},r}^{\text{hard}}$ | 协同硬约束 rotation | `controller.py` | 25000 |
+| $\delta_p$ | 协同位置死区 | `position_tolerance` | 0.005 m |
+| $\delta_r$ | 协同姿态死区 | `orientation_tolerance` | 0.05 rad |
 
 ### 优化器参数
 
@@ -234,7 +222,7 @@ $$C_{\text{rel}} = w_{\text{rel}}^{\text{hard}} \sum_{k=1}^{N} \Big[ \max\bigl(0
 | $\Delta t$ (`optimization_dt`) | 0.025 s |
 | prediction horizon | $N \cdot \Delta t = 0.4$ s |
 | cold start iters | 100 |
-| warm start iters | 100 |
+| warm start iters | 200 |
 | LBFGS `num_iters` | 40 |
 | LBFGS `inner_iters` | 20 |
 | `step_scale` | 0.8 |

@@ -35,7 +35,7 @@ class DualArmMPCController:
         scene_dict: Optional[dict] = None,
         optimization_dt: float = 0.025,
         cold_start_iters: int = 100,
-        warm_start_iters: int = 100,
+        warm_start_iters: int = 200,
         master_slave: bool = False,
         split_spheres: bool = False,
     ):
@@ -100,28 +100,25 @@ class DualArmMPCController:
             pass
 
     def _inject_relative_pose_config(self, config) -> None:
-        """注入相对位姿硬约束 (hinge + deadzone, 无 soft cost).
+        """注入相对位姿硬约束 (deadzone + continuous penalty).
 
-        约束形式: cost = w * max(0, error - tolerance)²
-        - tolerance 内: cost=0, grad=0 (死区, 不干扰碰撞/平滑优化)
-        - tolerance 外: 连续二次惩罚, 有梯度, LBFGS 可追踪
+        tolerance 内: cost=0, grad=0. tolerance 外: 二次惩罚, 梯度可追踪.
+        仅注入 constraint_cfg, 不注入软代价.
         """
-        self._rel_hard_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([50000.0, 5000.0]),
+        rel_cfg = RelativePoseCostCfg(
+            weight=torch.tensor([250000.0, 25000.0]),
             primary_tool_frame=self.LEFT_TF,
             secondary_tool_frame=self.RIGHT_TF,
-            position_tolerance=0.01,
+            position_tolerance=0.005,
             orientation_tolerance=0.05,
-            # 不加 convert_to_binary: 保留连续梯度
         )
         core = config.core_cfg
         for rc in core.optimizer_rollout_configs:
             if rc.constraint_cfg is not None:
-                rc.constraint_cfg.relative_pose_cfg = self._rel_hard_cfg
-            # 不注入软代价到 cost_cfg
+                rc.constraint_cfg.relative_pose_cfg = rel_cfg
         mr = core.metrics_rollout_config
         if mr is not None and mr.constraint_cfg is not None:
-            mr.constraint_cfg.relative_pose_cfg = self._rel_hard_cfg
+            mr.constraint_cfg.relative_pose_cfg = rel_cfg
 
     def _init_relative_pose_control(self) -> None:
         """MPC 构建后，初始禁用 relative_pose."""

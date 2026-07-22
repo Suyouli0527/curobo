@@ -259,8 +259,6 @@ the worst collision pair per timestep, producing a \textbf{sparse gradient}:
 \end{equation}
 computed only for the maximally penetrating pair.
 
-\subsection{Relative Pose Hard Constraint $C_{\text{rel}}$ (runtime toggle)}
-
 \section{Weight Tables}
 
 \begin{table}[h]
@@ -286,9 +284,9 @@ $\alpha_N$ / $\alpha_{<N}$ & Terminal / non-term.    & \texttt{cspace\_non\_term
 $w_{\text{col}}$     & Scene collision soft        & \texttt{scene\_collision\_cfg.weight}       & 10000  \\
 $\eta$               & Collision activation dist.  & \texttt{scene\_collision\_cfg.activation\_distance} & 0.03 m \\
 $w_{\text{self}}$    & Self-collision soft         & \texttt{self\_collision\_cfg.weight}        & 100000 \\
-$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard pos  & \texttt{controller.py}                      & 50000 \\
-$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rot  & \texttt{controller.py}                      & 5000  \\
-$\delta_p$           & Coord. position deadzone     & \texttt{position\_tolerance}                 & 0.01 m \\
+$w_{\text{rel},p}^{\text{hard}}$ & Coordination hard pos  & \texttt{controller.py}                      & 250000 \\
+$w_{\text{rel},r}^{\text{hard}}$ & Coordination hard rot  & \texttt{controller.py}                      & 25000  \\
+$\delta_p$           & Coord. position deadzone     & \texttt{position\_tolerance}                 & 0.005 m \\
 $\delta_r$           & Coord. rotation deadzone     & \texttt{orientation\_tolerance}              & 0.05 rad \\
 \bottomrule
 \end{tabular}
@@ -313,7 +311,7 @@ $T$                & Prediction horizon ($N \cdot \Delta t$)   & 0.4 s    \\
 \texttt{step\_scale}& Initial step scale                      & 0.8      \\
 \texttt{cost\_convergence} & Cost convergence threshold       & $10^{-11}$ \\
 Cold start iters   & Cold-start warmup iterations              & 100      \\
-Warm start iters   & Warm-start warmup iterations              & 100      \\
+Warm start iters   & Warm-start warmup iterations              & 200      \\
 \bottomrule
 \end{tabular}
 \end{table}
