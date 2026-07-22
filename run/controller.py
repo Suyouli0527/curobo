@@ -100,34 +100,28 @@ class DualArmMPCController:
             pass
 
     def _inject_relative_pose_config(self, config) -> None:
-        """在 MPC 构建前，把 relative_pose cost 注入 config."""
-        self._rel_pose_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([7500.0, 750.0]),
+        """注入相对位姿硬约束 (hinge + deadzone, 无 soft cost).
+
+        约束形式: cost = w * max(0, error - tolerance)²
+        - tolerance 内: cost=0, grad=0 (死区, 不干扰碰撞/平滑优化)
+        - tolerance 外: 连续二次惩罚, 有梯度, LBFGS 可追踪
+        """
+        self._rel_hard_cfg = RelativePoseCostCfg(
+            weight=torch.tensor([50000.0, 5000.0]),
             primary_tool_frame=self.LEFT_TF,
             secondary_tool_frame=self.RIGHT_TF,
             position_tolerance=0.01,
             orientation_tolerance=0.05,
-        )
-        rel_pose_hard_cfg = RelativePoseCostCfg(
-            weight=torch.tensor([75000.0, 7500.0]),
-            primary_tool_frame=self.LEFT_TF,
-            secondary_tool_frame=self.RIGHT_TF,
-            position_tolerance=0.01,
-            orientation_tolerance=0.05,
-            convert_to_binary=True,
+            # 不加 convert_to_binary: 保留连续梯度
         )
         core = config.core_cfg
         for rc in core.optimizer_rollout_configs:
-            if rc.cost_cfg is not None:
-                rc.cost_cfg.relative_pose_cfg = self._rel_pose_cfg
             if rc.constraint_cfg is not None:
-                rc.constraint_cfg.relative_pose_cfg = rel_pose_hard_cfg
+                rc.constraint_cfg.relative_pose_cfg = self._rel_hard_cfg
+            # 不注入软代价到 cost_cfg
         mr = core.metrics_rollout_config
-        if mr is not None:
-            if mr.cost_cfg is not None:
-                mr.cost_cfg.relative_pose_cfg = self._rel_pose_cfg
-            if mr.constraint_cfg is not None:
-                mr.constraint_cfg.relative_pose_cfg = rel_pose_hard_cfg
+        if mr is not None and mr.constraint_cfg is not None:
+            mr.constraint_cfg.relative_pose_cfg = self._rel_hard_cfg
 
     def _init_relative_pose_control(self) -> None:
         """MPC 构建后，初始禁用 relative_pose."""
